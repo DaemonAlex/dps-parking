@@ -27,9 +27,10 @@ EventBus.Priority = {
 
 -- Configuration
 EventBus.Config = {
-    HookTimeout = 5000,      -- Max ms for a hook to respond (5 seconds)
+    HookTimeout = 750,       -- Max ms for a hook to respond (750ms - balanced for performance)
     EnableTimeouts = true,   -- Enable timeout protection
     LogTimeouts = true,      -- Log when hooks timeout
+    MaxChainTimeout = 3000,  -- Max total time for entire hook chain (3 seconds)
 }
 
 -- ============================================
@@ -345,11 +346,11 @@ end
 ---Safely execute pre-hooks with guaranteed return
 ---@param action string Action name
 ---@param data table Action data
----@param maxWaitMs? number Maximum total wait time (default 10000ms)
+---@param maxWaitMs? number Maximum total wait time (default from config)
 ---@return boolean continue
 ---@return table data
 function EventBus.SafeExecutePreHooks(action, data, maxWaitMs)
-    maxWaitMs = maxWaitMs or 10000
+    maxWaitMs = maxWaitMs or EventBus.Config.MaxChainTimeout
 
     local p = promise.new()
     local resolved = false

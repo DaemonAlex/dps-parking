@@ -69,6 +69,7 @@ server_scripts {
     -- Core
     'core/bridge/init.lua',
     'core/bridge/server.lua',
+    'core/database/queries.lua',
     'core/state/server.lua',
 
     -- Modules

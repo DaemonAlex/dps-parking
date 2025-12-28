@@ -71,6 +71,37 @@ function Bridge.HasAnyJob(jobs)
     return false
 end
 
+---Check if player is on duty
+---@return boolean
+function Bridge.IsOnDuty()
+    local job = Bridge.GetPlayerJob()
+    if not job then return false end
+
+    -- Check onduty field (QBCore and some ESX setups)
+    if job.onduty ~= nil then
+        return job.onduty
+    end
+
+    -- Default: assume on duty if no duty system
+    return true
+end
+
+---Check if player has job AND is on duty
+---@param jobName string
+---@return boolean
+function Bridge.HasJobOnDuty(jobName)
+    if not Bridge.HasJob(jobName) then return false end
+    return Bridge.IsOnDuty()
+end
+
+---Check if player has any of the specified jobs AND is on duty
+---@param jobs table Array of job names
+---@return boolean
+function Bridge.HasAnyJobOnDuty(jobs)
+    if not Bridge.HasAnyJob(jobs) then return false end
+    return Bridge.IsOnDuty()
+end
+
 -- ============================================
 -- NOTIFICATIONS
 -- ============================================

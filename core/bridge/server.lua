@@ -78,6 +78,68 @@ function Bridge.GetPlayerJob(source)
     end
 end
 
+---Get player job data (full object)
+---@param source number
+---@return table|nil
+function Bridge.GetPlayerJobData(source)
+    local player = Bridge.GetPlayer(source)
+    if not player then return nil end
+
+    if Bridge.IsESX() then
+        return player.job
+    else
+        return player.PlayerData.job
+    end
+end
+
+---Check if player is on duty
+---@param source number
+---@return boolean
+function Bridge.IsOnDuty(source)
+    local player = Bridge.GetPlayer(source)
+    if not player then return false end
+
+    if Bridge.IsESX() then
+        -- ESX: Check job.onduty if available, otherwise assume on duty
+        if player.job and player.job.onduty ~= nil then
+            return player.job.onduty
+        end
+        return true -- ESX default: assume on duty if no duty system
+    else
+        -- QBCore: Check job.onduty
+        if player.PlayerData.job and player.PlayerData.job.onduty ~= nil then
+            return player.PlayerData.job.onduty
+        end
+        return true -- Default: assume on duty if no duty field
+    end
+end
+
+---Check if player has job AND is on duty
+---@param source number
+---@param jobName string
+---@return boolean
+function Bridge.HasJobOnDuty(source, jobName)
+    local job = Bridge.GetPlayerJob(source)
+    if job ~= jobName then return false end
+    return Bridge.IsOnDuty(source)
+end
+
+---Check if player has any of the specified jobs AND is on duty
+---@param source number
+---@param jobs table Array of job names
+---@return boolean
+function Bridge.HasAnyJobOnDuty(source, jobs)
+    local currentJob = Bridge.GetPlayerJob(source)
+    if not currentJob then return false end
+
+    for _, job in ipairs(jobs) do
+        if currentJob == job then
+            return Bridge.IsOnDuty(source)
+        end
+    end
+    return false
+end
+
 ---Get all online players
 ---@return table
 function Bridge.GetOnlinePlayers()
