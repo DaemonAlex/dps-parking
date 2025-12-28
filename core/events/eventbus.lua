@@ -25,6 +25,13 @@ EventBus.Priority = {
     LAST = 100
 }
 
+-- Configuration
+EventBus.Config = {
+    HookTimeout = 5000,      -- Max ms for a hook to respond (5 seconds)
+    EnableTimeouts = true,   -- Enable timeout protection
+    LogTimeouts = true,      -- Log when hooks timeout
+}
+
 -- ============================================
 -- EVENT SUBSCRIPTION
 -- ============================================
@@ -212,7 +219,71 @@ function EventBus.RemoveHook(hookType, action, id)
     return false
 end
 
----Execute pre-hooks for an action
+-- ============================================
+-- TIMEOUT WRAPPER
+-- ============================================
+
+---Execute a function with timeout protection
+---@param callback function The function to execute
+---@param data any Data to pass to function
+---@param timeoutMs number Timeout in milliseconds
+---@param hookId string Hook ID for logging
+---@return boolean timedOut
+---@return boolean|nil result
+---@return any modifiedData
+local function ExecuteWithTimeout(callback, data, timeoutMs, hookId)
+    if not EventBus.Config.EnableTimeouts then
+        -- No timeout - direct execution
+        local success, result, modifiedData = pcall(callback, data)
+        return false, success and result, modifiedData
+    end
+
+    local completed = false
+    local timedOut = false
+    local callbackResult = nil
+    local callbackModifiedData = nil
+    local callbackError = nil
+
+    -- Execute callback in a thread
+    CreateThread(function()
+        local success, result, modifiedData = pcall(callback, data)
+        if not completed then
+            completed = true
+            if success then
+                callbackResult = result
+                callbackModifiedData = modifiedData
+            else
+                callbackError = result
+            end
+        end
+    end)
+
+    -- Wait for completion or timeout
+    local startTime = GetGameTimer()
+    while not completed do
+        if GetGameTimer() - startTime > timeoutMs then
+            timedOut = true
+            completed = true -- Mark as completed to prevent late response
+            break
+        end
+        Wait(10)
+    end
+
+    if timedOut then
+        if EventBus.Config.LogTimeouts then
+            print(('[DPS-Parking] EventBus: Hook "%s" TIMED OUT after %dms - continuing without it'):format(hookId, timeoutMs))
+        end
+        return true, nil, nil
+    end
+
+    if callbackError then
+        return false, nil, nil
+    end
+
+    return false, callbackResult, callbackModifiedData
+end
+
+---Execute pre-hooks for an action with timeout protection
 ---@param action string Action name
 ---@param data table Action data
 ---@return boolean continue Whether to continue with action
@@ -222,14 +293,21 @@ function EventBus.ExecutePreHooks(action, data)
     if not hooks then return true, data end
 
     for _, hook in ipairs(hooks) do
-        local success, result, modifiedData = pcall(hook.callback, data)
+        local timedOut, result, modifiedData = ExecuteWithTimeout(
+            hook.callback,
+            data,
+            EventBus.Config.HookTimeout,
+            hook.id
+        )
 
-        if not success then
-            print(('[DPS-Parking] EventBus: Pre-hook error for "%s": %s'):format(action, result))
+        if timedOut then
+            -- Hook timed out - log and continue (don't block core functionality)
+            print(('[DPS-Parking] EventBus: WARNING - Pre-hook "%s" for action "%s" timed out!'):format(hook.id, action))
+            -- Continue to next hook, don't cancel the action due to a buggy hook
         elseif result == false then
-            -- Hook cancelled the action
+            -- Hook explicitly cancelled the action
             if Config and Config.Debug then
-                print(('[DPS-Parking] EventBus: Action "%s" cancelled by pre-hook'):format(action))
+                print(('[DPS-Parking] EventBus: Action "%s" cancelled by pre-hook "%s"'):format(action, hook.id))
             end
             return false, data
         elseif modifiedData then
@@ -240,7 +318,7 @@ function EventBus.ExecutePreHooks(action, data)
     return true, data
 end
 
----Execute post-hooks for an action
+---Execute post-hooks for an action with timeout protection
 ---@param action string Action name
 ---@param data table Action result data
 function EventBus.ExecutePostHooks(action, data)
@@ -248,11 +326,53 @@ function EventBus.ExecutePostHooks(action, data)
     if not hooks then return end
 
     for _, hook in ipairs(hooks) do
-        local success, err = pcall(hook.callback, data)
-        if not success then
-            print(('[DPS-Parking] EventBus: Post-hook error for "%s": %s'):format(action, err))
-        end
+        -- Post-hooks run in background - don't block on them
+        CreateThread(function()
+            local startTime = GetGameTimer()
+            local success, err = pcall(hook.callback, data)
+
+            local elapsed = GetGameTimer() - startTime
+
+            if not success then
+                print(('[DPS-Parking] EventBus: Post-hook error for "%s": %s'):format(action, err))
+            elseif elapsed > EventBus.Config.HookTimeout and EventBus.Config.LogTimeouts then
+                print(('[DPS-Parking] EventBus: Post-hook "%s" took %dms (slow)'):format(hook.id, elapsed))
+            end
+        end)
     end
+end
+
+---Safely execute pre-hooks with guaranteed return
+---@param action string Action name
+---@param data table Action data
+---@param maxWaitMs? number Maximum total wait time (default 10000ms)
+---@return boolean continue
+---@return table data
+function EventBus.SafeExecutePreHooks(action, data, maxWaitMs)
+    maxWaitMs = maxWaitMs or 10000
+
+    local p = promise.new()
+    local resolved = false
+
+    CreateThread(function()
+        local continue, modifiedData = EventBus.ExecutePreHooks(action, data)
+        if not resolved then
+            resolved = true
+            p:resolve({ continue = continue, data = modifiedData })
+        end
+    end)
+
+    -- Safety timeout for entire hook chain
+    SetTimeout(maxWaitMs, function()
+        if not resolved then
+            resolved = true
+            print(('[DPS-Parking] EventBus: CRITICAL - Entire pre-hook chain for "%s" timed out! Proceeding with action.'):format(action))
+            p:resolve({ continue = true, data = data })
+        end
+    end)
+
+    local result = Citizen.Await(p)
+    return result.continue, result.data
 end
 
 -- ============================================

@@ -48,6 +48,7 @@ client_scripts {
 
     -- Core
     'core/bridge/init.lua',
+    'core/utils/vehicle.lua',
     'core/bridge/client.lua',
     'core/state/client.lua',
 

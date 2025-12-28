@@ -393,4 +393,170 @@ function Bridge.ContextMenu(id, title, options)
     end
 end
 
+-- ============================================
+-- REACTIVE JOB/GRADE UPDATES
+-- ============================================
+
+Bridge.Job = {
+    _callbacks = {},
+    _lastJob = nil,
+    _lastGrade = nil,
+}
+
+---Register a callback for job changes
+---@param callback function (newJob, oldJob)
+---@return string id
+function Bridge.Job.OnChange(callback)
+    local id = 'job_cb_' .. GetGameTimer()
+    Bridge.Job._callbacks[id] = callback
+    return id
+end
+
+---Remove job change callback
+---@param id string
+function Bridge.Job.RemoveCallback(id)
+    Bridge.Job._callbacks[id] = nil
+end
+
+---Notify all job change callbacks
+local function NotifyJobChange(newJob, oldJob)
+    for _, callback in pairs(Bridge.Job._callbacks) do
+        local success, err = pcall(callback, newJob, oldJob)
+        if not success then
+            print(('[DPS-Parking] Bridge: Job callback error: %s'):format(err))
+        end
+    end
+
+    -- Publish to EventBus
+    if EventBus then
+        EventBus.Publish('player:jobChanged', {
+            new = newJob,
+            old = oldJob
+        })
+    end
+end
+
+-- Job change detection thread
+CreateThread(function()
+    Bridge.WaitReady()
+    Wait(2000)
+
+    Bridge.Job._lastJob = Bridge.GetPlayerJob()
+
+    while true do
+        local currentJob = Bridge.GetPlayerJob()
+
+        if currentJob then
+            local jobChanged = Bridge.Job._lastJob == nil or
+                              Bridge.Job._lastJob.name ~= currentJob.name
+            local gradeChanged = Bridge.Job._lastJob and
+                                Bridge.Job._lastJob.grade and
+                                currentJob.grade and
+                                Bridge.Job._lastJob.grade.level ~= currentJob.grade.level
+
+            if jobChanged or gradeChanged then
+                NotifyJobChange(currentJob, Bridge.Job._lastJob)
+                Bridge.Job._lastJob = currentJob
+            end
+        end
+
+        Wait(1000)
+    end
+end)
+
+-- Framework-specific job update events
+if Bridge.IsQB() then
+    RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
+        NotifyJobChange(job, Bridge.Job._lastJob)
+        Bridge.Job._lastJob = job
+    end)
+elseif Bridge.IsESX() then
+    RegisterNetEvent('esx:setJob', function(job)
+        NotifyJobChange(job, Bridge.Job._lastJob)
+        Bridge.Job._lastJob = job
+    end)
+end
+
+-- ============================================
+-- SCRIPT INTEGRATIONS
+-- ============================================
+
+Bridge.Integrations = {}
+
+---Check what vehicle-related scripts are available
+function Bridge.Integrations.Detect()
+    return {
+        -- Fuel
+        fuel = Bridge.Resources.GetFuel(),
+
+        -- Keys
+        vehicleKeys = Bridge.Resources.GetVehicleKeys(),
+
+        -- Target
+        target = Bridge.Resources.GetTarget(),
+
+        -- Garages
+        garage = Bridge.Resources.Exists('qb-garages') and 'qb-garages' or
+                 Bridge.Resources.Exists('qs-advancedgarages') and 'qs-advancedgarages' or
+                 Bridge.Resources.Exists('jg-advancedgarages') and 'jg-advancedgarages' or
+                 nil,
+
+        -- Damage/Visual sync
+        vehicleSync = Bridge.Resources.Exists('qs-vehicletuning') and 'qs-vehicletuning' or
+                      Bridge.Resources.Exists('qb-mechanicjob') and 'qb-mechanicjob' or
+                      nil,
+
+        -- Phone
+        phone = Bridge.Resources.Exists('lb-phone') and 'lb-phone' or
+                Bridge.Resources.Exists('qs-smartphone-pro') and 'qs-smartphone-pro' or
+                Bridge.Resources.Exists('gksphone') and 'gksphone' or
+                nil,
+
+        -- Dispatch
+        dispatch = Bridge.Resources.Exists('qs-dispatch') and 'qs-dispatch' or
+                   Bridge.Resources.Exists('ps-dispatch') and 'ps-dispatch' or
+                   Bridge.Resources.Exists('cd_dispatch') and 'cd_dispatch' or
+                   nil,
+    }
+end
+
+---Get vehicle properties using best available method
+---@param vehicle number
+---@return table
+function Bridge.Integrations.GetVehicleData(vehicle)
+    -- Check if we have a specialized vehicle sync script
+    local integrations = Bridge.Integrations.Detect()
+
+    if integrations.vehicleSync == 'qs-vehicletuning' then
+        -- QS Vehicle Tuning has comprehensive data
+        local props = Bridge.GetVehicleProperties(vehicle)
+        return props
+    end
+
+    -- Use VehicleData utility for comprehensive capture
+    if VehicleData then
+        return VehicleData.Serialize(vehicle)
+    end
+
+    -- Fallback to basic properties
+    return Bridge.GetVehicleProperties(vehicle)
+end
+
+---Set vehicle properties using best available method
+---@param vehicle number
+---@param data table
+function Bridge.Integrations.SetVehicleData(vehicle, data)
+    -- Use VehicleData utility for comprehensive restore
+    if VehicleData and data.damage then
+        VehicleData.Deserialize(vehicle, data)
+    else
+        Bridge.SetVehicleProperties(vehicle, data.mods or data)
+    end
+
+    -- Set fuel separately
+    if data.fuel then
+        Bridge.SetFuel(vehicle, data.fuel)
+    end
+end
+
 print('^2[DPS-Parking] Client bridge loaded^0')

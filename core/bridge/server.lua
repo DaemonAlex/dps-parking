@@ -417,4 +417,150 @@ RegisterNetEvent('dps-parking:server:requestStateSync', function()
     Bridge.SyncStateToClient(source)
 end)
 
+-- ============================================
+-- REACTIVE JOB/GRADE UPDATES (Server)
+-- ============================================
+
+Bridge.Job = {
+    _callbacks = {},
+}
+
+---Register a callback for when any player's job changes
+---@param callback function (source, newJob, oldJob)
+---@return string id
+function Bridge.Job.OnChange(callback)
+    local id = 'job_cb_' .. os.time()
+    Bridge.Job._callbacks[id] = callback
+    return id
+end
+
+---Remove job change callback
+---@param id string
+function Bridge.Job.RemoveCallback(id)
+    Bridge.Job._callbacks[id] = nil
+end
+
+---Notify all job change callbacks
+local function NotifyJobChange(source, newJob, oldJob)
+    for _, callback in pairs(Bridge.Job._callbacks) do
+        local success, err = pcall(callback, source, newJob, oldJob)
+        if not success then
+            print(('[DPS-Parking] Bridge: Job callback error: %s'):format(err))
+        end
+    end
+
+    -- Publish to EventBus
+    if EventBus then
+        EventBus.Publish('player:jobChanged', {
+            source = source,
+            citizenid = Bridge.GetCitizenId(source),
+            new = newJob,
+            old = oldJob
+        })
+    end
+end
+
+-- Framework-specific job update events
+CreateThread(function()
+    Bridge.WaitReady()
+
+    if Bridge.IsQB() then
+        -- QBCore job update
+        RegisterNetEvent('QBCore:Server:OnJobUpdate', function(source, job)
+            NotifyJobChange(source, job, nil)
+        end)
+
+        -- Also hook into player data updates
+        if Bridge.Core and Bridge.Core.Functions then
+            local originalSetJob = Bridge.Core.Functions.SetJob
+            if originalSetJob then
+                Bridge.Core.Functions.SetJob = function(source, job, grade)
+                    local player = Bridge.GetPlayer(source)
+                    local oldJob = player and player.PlayerData.job or nil
+                    local result = originalSetJob(source, job, grade)
+                    local newJob = Bridge.GetPlayer(source)
+                    newJob = newJob and newJob.PlayerData.job or nil
+                    NotifyJobChange(source, newJob, oldJob)
+                    return result
+                end
+            end
+        end
+    elseif Bridge.IsESX() then
+        RegisterNetEvent('esx:setJob', function(source, job, lastJob)
+            NotifyJobChange(source, job, lastJob)
+        end)
+    end
+end)
+
+-- ============================================
+-- BUSINESS ACCESS REVOCATION ON JOB LOSS
+-- ============================================
+
+-- Auto-hook to revoke business access when job changes
+Bridge.Job.OnChange(function(source, newJob, oldJob)
+    -- Check if this affects any business ownership
+    local citizenid = Bridge.GetCitizenId(source)
+    if not citizenid then return end
+
+    -- Let the business module handle the logic via EventBus
+    -- This keeps Bridge generic and lets modules subscribe to what they need
+end)
+
+-- ============================================
+-- SERVER INTEGRATIONS
+-- ============================================
+
+Bridge.Integrations = {}
+
+---Detect available server scripts
+function Bridge.Integrations.Detect()
+    return {
+        -- Database
+        database = Bridge.Resources.Exists('oxmysql') and 'oxmysql' or
+                   Bridge.Resources.Exists('mysql-async') and 'mysql-async' or
+                   nil,
+
+        -- Banking
+        banking = Bridge.Resources.Exists('qs-banking') and 'qs-banking' or
+                  Bridge.Resources.Exists('qb-banking') and 'qb-banking' or
+                  nil,
+
+        -- Inventory
+        inventory = Bridge.Resources.Exists('qs-inventory') and 'qs-inventory' or
+                    Bridge.Resources.Exists('qb-inventory') and 'qb-inventory' or
+                    Bridge.Resources.Exists('ox_inventory') and 'ox_inventory' or
+                    nil,
+
+        -- Management
+        management = Bridge.Resources.Exists('qb-management') and 'qb-management' or
+                     Bridge.Resources.Exists('okokBossMenu') and 'okokBossMenu' or
+                     nil,
+
+        -- Garages
+        garage = Bridge.Resources.Exists('qs-advancedgarages') and 'qs-advancedgarages' or
+                 Bridge.Resources.Exists('jg-advancedgarages') and 'jg-advancedgarages' or
+                 Bridge.Resources.Exists('qb-garages') and 'qb-garages' or
+                 nil,
+    }
+end
+
+---Log detected integrations on startup
+CreateThread(function()
+    Bridge.WaitReady()
+    Wait(3000)
+
+    local integrations = Bridge.Integrations.Detect()
+    local detected = {}
+
+    for name, value in pairs(integrations) do
+        if value then
+            table.insert(detected, name .. ': ' .. value)
+        end
+    end
+
+    if #detected > 0 then
+        print('^2[DPS-Parking] Detected integrations: ' .. table.concat(detected, ', ') .. '^0')
+    end
+end)
+
 print('^2[DPS-Parking] Server bridge loaded^0')

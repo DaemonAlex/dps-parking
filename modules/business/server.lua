@@ -137,6 +137,71 @@ RegisterNetEvent('dps-parking:server:collectRevenue', function(lotId)
     Bridge.Notify(source, message, success and 'success' or 'error')
 end)
 
+-- ============================================
+-- JOB CHANGE HANDLING
+-- ============================================
+
+-- Subscribe to job changes to handle business access
+EventBus.Subscribe('player:jobChanged', function(data)
+    if not Config.Business.enabled then return end
+
+    local citizenid = data.citizenid
+    if not citizenid then return end
+
+    -- Check if player owns any lots with job requirements
+    for lotId, owner in pairs(State._data.businessOwners) do
+        if owner.citizenid == citizenid then
+            local lot = Zones.GetParkingLot(lotId)
+            if lot and lot.requiredJob then
+                -- Check if new job still qualifies
+                local newJobName = data.new and data.new.name or nil
+                if newJobName ~= lot.requiredJob then
+                    -- Revoke ownership
+                    Utils.Debug(('Revoking lot %d ownership from %s - job changed'):format(lotId, citizenid))
+
+                    -- Notify the player if online
+                    local player = Bridge.GetPlayerByCitizenId(citizenid)
+                    if player then
+                        local playerSource = Bridge.IsESX() and player.source or player.PlayerData.source
+                        if playerSource then
+                            Bridge.Notify(playerSource, 'Your parking lot ownership was revoked due to job change', 'error')
+                        end
+                    end
+
+                    -- Remove ownership
+                    State.SetBusinessOwner(lotId, nil)
+
+                    -- Publish event
+                    EventBus.Publish('business:ownershipRevoked', {
+                        lotId = lotId,
+                        citizenid = citizenid,
+                        reason = 'job_change'
+                    })
+                end
+            end
+        end
+
+        -- Check employees too
+        if owner.employees then
+            for empId, empData in pairs(owner.employees) do
+                if empData.citizenid == citizenid then
+                    local lot = Zones.GetParkingLot(lotId)
+                    if lot and lot.requiredJob then
+                        local newJobName = data.new and data.new.name or nil
+                        if newJobName ~= lot.requiredJob then
+                            -- Remove employee
+                            owner.employees[empId] = nil
+                            State.SetBusinessOwner(lotId, owner)
+
+                            Utils.Debug(('Removed employee %s from lot %d - job changed'):format(citizenid, lotId))
+                        end
+                    end
+                end
+            end
+        end
+    end
+end, EventBus.Priority.NORMAL)
+
 print('^2[DPS-Parking] Business module (server) loaded^0')
 
 return Business
