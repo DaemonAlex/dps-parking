@@ -43,11 +43,6 @@ shared_scripts {
 
 -- Client scripts
 client_scripts {
-    -- Optional PolyZone support
-    '@PolyZone/client.lua',
-    '@PolyZone/BoxZone.lua',
-    '@PolyZone/CircleZone.lua',
-    '@PolyZone/ComboZone.lua',
 
     -- Core
     'core/bridge/init.lua',
