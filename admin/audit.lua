@@ -48,7 +48,9 @@ end
 -- ============================================
 
 -- Log vehicle parked
-EventBus.Subscribe('parking:park', function(data)
+-- H4: parking module fires this via EventBus.ExecutePostHooks (NOT Publish),
+-- so we must register a POST-HOOK, not a subscription, or this never fires.
+EventBus.RegisterPostHook('parking:park', function(data)
     if not Config.Integration.discordWebhook or Config.Integration.discordWebhook == '' then return end
 
     Audit.LogToDiscord(
@@ -62,8 +64,8 @@ EventBus.Subscribe('parking:park', function(data)
     )
 end)
 
--- Log vehicle unparked
-EventBus.Subscribe('parking:unpark', function(data)
+-- Log vehicle unparked (also a post-hook - see above)
+EventBus.RegisterPostHook('parking:unpark', function(data)
     if not Config.Integration.discordWebhook or Config.Integration.discordWebhook == '' then return end
 
     Audit.LogToDiscord(
@@ -91,14 +93,15 @@ EventBus.Subscribe('parking:impounded', function(data)
 end)
 
 -- Log tickets
-EventBus.Subscribe('meters:ticketIssued', function(data)
+-- H4: meters module publishes 'meters:expired' (was 'meters:ticketIssued'); standardized.
+EventBus.Subscribe('meters:expired', function(data)
     Audit.LogToDiscord(
         'Parking Ticket Issued',
         ('Ticket issued for vehicle **%s**'):format(data.plate),
         16776960, -- Yellow
         {
             { name = 'Plate', value = data.plate, inline = true },
-            { name = 'Amount', value = Utils.FormatMoney(data.amount), inline = true }
+            { name = 'Amount', value = Utils.FormatMoney(data.amount or 0), inline = true }
         }
     )
 end)

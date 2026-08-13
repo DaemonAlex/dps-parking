@@ -53,6 +53,7 @@ function DB.GetAllParkedVehicles()
             street = parkingData.street,
             steerangle = parkingData.steerangle,
             heading = parkingData.heading,
+            trailerdata = parkingData.trailerdata,
             -- Vehicle state data
             mods = vehicleState.mods,
             damage = vehicleState.damage,
@@ -102,10 +103,13 @@ function DB.GetPlayerParkedVehicles(citizenid)
             location = parkingData.location,
             street = parkingData.street,
             steerangle = parkingData.steerangle,
+            heading = parkingData.heading,
+            trailerdata = parkingData.trailerdata,
             mods = vehicleState.mods,
             damage = vehicleState.damage,
             fuel = vehicleState.fuel,
             extras = vehicleState.extras,
+            neon = vehicleState.neon,
             lotId = row.parking_lot,
             parkedAt = row.parked_at,
         }
@@ -128,6 +132,7 @@ function DB.ParkVehicle(plate, citizenid, data)
         street = data.street,
         steerangle = data.steerangle,
         heading = data.heading,
+        trailerdata = data.trailerdata,
     })
 
     local vehicleState = json.encode({

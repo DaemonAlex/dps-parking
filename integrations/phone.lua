@@ -1,47 +1,20 @@
 --[[
-    DPS-Parking - Phone Integration
+    DPS-Parking - Phone Integration (SERVER)
     Original: mh-parking by MaDHouSe79
     Enhanced: DPS Development
 
-    Integration with phone resources (lb-phone, qs-smartphone, etc.)
+    Server-side phone callbacks (State.*, Delivery.*, Bridge.CreateCallback are all
+    server-only). H3: this file is loaded as a server_script. The client-side app
+    registration (lb-phone AddCustomApp) lives in integrations/phone_client.lua.
 ]]
 
 if not Config.Integration.phoneEnabled then
-    print('^3[DPS-Parking] Phone integration disabled^0')
+    print('^3[DPS-Parking] Phone integration (server) disabled^0')
     return
 end
 
 -- ============================================
--- PHONE APP REGISTRATION
--- ============================================
-
-local function RegisterPhoneApp()
-    -- Try lb-phone
-    if GetResourceState('lb-phone') == 'started' then
-        exports['lb-phone']:AddCustomApp({
-            identifier = 'dps-parking',
-            name = 'Parking',
-            description = 'Manage your parked vehicles',
-            developer = 'DPS Development',
-            defaultApp = false,
-            ui = GetCurrentResourceName() .. '/ui/phone/index.html'
-        })
-        print('^2[DPS-Parking] Registered with lb-phone^0')
-        return true
-    end
-
-    -- Try qs-smartphone-pro
-    if GetResourceState('qs-smartphone-pro') == 'started' then
-        -- QS smartphone uses different registration
-        print('^2[DPS-Parking] QS Smartphone detected - use built-in integration^0')
-        return true
-    end
-
-    return false
-end
-
--- ============================================
--- PHONE CALLBACKS
+-- PHONE CALLBACKS (server)
 -- ============================================
 
 Bridge.CreateCallback('dps-parking:phone:getVehicles', function(source, cb)
@@ -63,7 +36,8 @@ Bridge.CreateCallback('dps-parking:phone:getVehicles', function(source, cb)
 end)
 
 Bridge.CreateCallback('dps-parking:phone:requestDelivery', function(source, cb, plate, coords, rush)
-    local success, message = Delivery.Request(source, plate, coords, rush)
+    -- M4: Delivery.Request expects an options table, not a bare boolean.
+    local success, message = Delivery.Request(source, plate, coords, { rush = rush })
     cb({ success = success, message = message })
 end)
 
@@ -80,13 +54,4 @@ Bridge.CreateCallback('dps-parking:phone:getMeterStatus', function(source, cb, p
     end
 end)
 
--- ============================================
--- INITIALIZE
--- ============================================
-
-CreateThread(function()
-    Wait(5000) -- Wait for phone resources to load
-    RegisterPhoneApp()
-end)
-
-print('^2[DPS-Parking] Phone integration loaded^0')
+print('^2[DPS-Parking] Phone integration (server) loaded^0')

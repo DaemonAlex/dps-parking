@@ -495,6 +495,25 @@ EventBus.Subscribe('parking:unpark', function(data)
     end
 end, EventBus.Priority.HIGH)
 
+-- ============================================
+-- MAINTENANCE (M3: prune expired hourly counters)
+-- ============================================
+
+CreateThread(function()
+    Bridge.WaitReady()
+    while true do
+        Wait(1800000) -- every 30 minutes
+        local currentHour = os.date('%Y%m%d%H')
+        for key in pairs(playerDeliveryCount) do
+            -- keys are "citizenid_YYYYMMDDHH"; drop anything not for the current hour
+            local hourSuffix = key:match('_(%d+)$')
+            if hourSuffix ~= currentHour then
+                playerDeliveryCount[key] = nil
+            end
+        end
+    end
+end)
+
 print('^2[DPS-Parking] Delivery module (server) loaded^0')
 
 return Delivery

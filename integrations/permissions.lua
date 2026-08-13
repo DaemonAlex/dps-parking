@@ -196,10 +196,15 @@ end
 ---@param grade number
 ---@return string
 function Permissions.GetGradeName(jobName, grade)
-    -- Try to get from framework
-    if Bridge.IsQB() then
-        local jobs = exports['qb-core']:GetCoreObject().Shared.Jobs
-        if jobs and jobs[jobName] and jobs[jobName].grades and jobs[jobName].grades[tostring(grade)] then
+    -- Try to get from framework via discrete exports (never GetCoreObject - it throws on this build)
+    if Bridge.IsQBX() then
+        local ok, jobs = pcall(function() return exports.qbx_core:GetJobs() end)
+        if ok and jobs and jobs[jobName] and jobs[jobName].grades and jobs[jobName].grades[grade] then
+            return jobs[jobName].grades[grade].name
+        end
+    elseif Bridge.IsQB() then
+        local ok, jobs = pcall(function() return exports['qb-core']:GetJobs() end)
+        if ok and jobs and jobs[jobName] and jobs[jobName].grades and jobs[jobName].grades[tostring(grade)] then
             return jobs[jobName].grades[tostring(grade)].name
         end
     end

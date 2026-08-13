@@ -174,6 +174,9 @@ function Parking.Park(source, data)
     end
 
     data = modifiedData and modifiedData.data or data
+    -- The zones pre-hook attaches the parking lot (if any) to the hook payload.
+    -- Capture it here so it can be forwarded to the post-hooks (business revenue).
+    local lot = modifiedData and modifiedData.lot
 
     -- Check slot limit
     if not State.CanPlayerPark(citizenid) then
@@ -213,21 +216,26 @@ function Parking.Park(source, data)
         return false, L('vehicle_not_owned')
     end
 
-    -- Update database
+    -- Parse mods (so appearance persists across restart via vehicle_state JSON)
+    local mods = vehicleRecord.mods
+    if type(mods) == 'string' then
+        mods = json.decode(mods)
+    end
+
+    -- Update database (JSON schema columns via DB layer)
     Bridge.DB.SetVehicleParked(
         data.plate,
         data.location,
         data.street,
         data.steerangle,
         data.fuel,
-        data.trailerdata
+        data.trailerdata,
+        {
+            citizenid = citizenid,
+            mods = mods,
+            lotId = lot and lot.id or nil,
+        }
     )
-
-    -- Parse mods
-    local mods = vehicleRecord.mods
-    if type(mods) == 'string' then
-        mods = json.decode(mods)
-    end
 
     -- Store in state
     State.SetParkedVehicle(data.plate, {
@@ -259,11 +267,12 @@ function Parking.Park(source, data)
     -- Sync state to owner
     Bridge.SyncStateToClient(source)
 
-    -- Execute post hooks
+    -- Execute post hooks (forward the lot so the business revenue hook can accrue)
     EventBus.ExecutePostHooks('parking:park', {
         source = source,
         citizenid = citizenid,
         plate = data.plate,
+        lot = lot,
         data = State.GetParkedVehicle(data.plate)
     })
 

@@ -333,6 +333,25 @@ Bridge.CreateCallback('dps-parking:server:getImpoundFee', function(source, cb, p
     cb({ fee = fee, discount = discount, reason = reason })
 end)
 
+-- ============================================
+-- MAINTENANCE (M3: prune stale impound records)
+-- ============================================
+
+CreateThread(function()
+    Bridge.WaitReady()
+    while true do
+        Wait(3600000) -- hourly
+        local now = os.time()
+        -- Fees cap at maxDailyFees days; anything sitting far beyond that is dead weight.
+        local retention = (Impound.Config.maxDailyFees + 7) * 86400
+        for plate, data in pairs(Impound._vehicles) do
+            if data.retrieved or (data.impoundedAt and (now - data.impoundedAt) > retention) then
+                Impound._vehicles[plate] = nil
+            end
+        end
+    end
+end)
+
 print('^2[DPS-Parking] Impound module (server) loaded^0')
 
 return Impound

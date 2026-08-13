@@ -59,14 +59,20 @@ function Business.PurchaseLot(source, lotId)
     -- Process purchase
     Bridge.RemoveMoney(source, 'bank', price, 'Parking lot purchase')
 
-    State.SetBusinessOwner(lotId, {
+    local ownerData = {
         citizenid = citizenid,
         lotId = lotId,
         purchasedAt = os.time(),
         revenue = 0,
         employees = {},
-        upgrades = {}
-    })
+        upgrades = {},
+        settings = {},
+    }
+
+    State.SetBusinessOwner(lotId, ownerData)
+
+    -- Persist so a lot bought for $400k-$1M survives a restart (H1)
+    DB.SetBusinessOwner(lotId, ownerData)
 
     return true, L('lot_purchased', lot.name, Utils.FormatMoney(price))
 end
@@ -98,6 +104,7 @@ function Business.CollectRevenue(source, lotId)
     -- Reset revenue
     owner.revenue = 0
     State.SetBusinessOwner(lotId, owner)
+    DB.UpdateBusinessRevenue(lotId, 0)
 
     return true, L('revenue_collected', Utils.FormatMoney(payout))
 end
@@ -119,6 +126,8 @@ EventBus.RegisterPostHook('parking:park', function(data)
 
     owner.revenue = (owner.revenue or 0) + ownerCut
     State.SetBusinessOwner(data.lot.id, owner)
+    -- Persist accrued revenue (H1/H4 - data.lot is now populated by the park post-hook)
+    DB.UpdateBusinessRevenue(data.lot.id, owner.revenue)
 end, EventBus.Priority.LOW)
 
 -- ============================================
@@ -168,8 +177,9 @@ EventBus.Subscribe('player:jobChanged', function(data)
                         end
                     end
 
-                    -- Remove ownership
+                    -- Remove ownership (memory + persisted)
                     State.SetBusinessOwner(lotId, nil)
+                    DB.RemoveBusinessOwner(lotId)
 
                     -- Publish event
                     EventBus.Publish('business:ownershipRevoked', {
@@ -189,9 +199,10 @@ EventBus.Subscribe('player:jobChanged', function(data)
                     if lot and lot.requiredJob then
                         local newJobName = data.new and data.new.name or nil
                         if newJobName ~= lot.requiredJob then
-                            -- Remove employee
+                            -- Remove employee (memory + persisted)
                             owner.employees[empId] = nil
                             State.SetBusinessOwner(lotId, owner)
+                            DB.SetBusinessOwner(lotId, owner)
 
                             Utils.Debug(('Removed employee %s from lot %d - job changed'):format(citizenid, lotId))
                         end
@@ -201,6 +212,32 @@ EventBus.Subscribe('player:jobChanged', function(data)
         end
     end
 end, EventBus.Priority.NORMAL)
+
+-- ============================================
+-- BOOT LOADER (H1: restore ownership + VIP from DB on start)
+-- ============================================
+
+---Convert a keyed map to an array for State.LoadFromDatabase
+local function MapToArray(map)
+    local list = {}
+    for _, v in pairs(map or {}) do
+        list[#list + 1] = v
+    end
+    return list
+end
+
+CreateThread(function()
+    Bridge.WaitReady()
+    Wait(500) -- ensure DB layer + oxmysql are ready
+
+    -- Load VIP players and business owners so ownership survives a restart.
+    -- Parked vehicles are loaded/spawned separately by Parking.Initialize.
+    State.LoadFromDatabase(
+        nil,
+        MapToArray(DB.GetAllVipPlayers()),
+        MapToArray(DB.GetAllBusinessOwners())
+    )
+end)
 
 print('^2[DPS-Parking] Business module (server) loaded^0')
 

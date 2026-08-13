@@ -24,7 +24,7 @@ lua54 'yes'
 name 'dps-parking'
 author 'DPS Development (Original: MaDHouSe79)'
 description 'Advanced Parking System with Valet, Impound, Violations, Reserved Spots & More'
-version '2.1.0'
+version '2.2.0'
 
 -- Dependencies
 dependencies {
@@ -43,12 +43,6 @@ shared_scripts {
 
 -- Client scripts
 client_scripts {
-    -- Optional PolyZone support
-    '@PolyZone/client.lua',
-    '@PolyZone/BoxZone.lua',
-    '@PolyZone/CircleZone.lua',
-    '@PolyZone/ComboZone.lua',
-
     -- Core
     'core/bridge/init.lua',
     'core/utils/vehicle.lua',
@@ -65,8 +59,8 @@ client_scripts {
     'modules/violations/client.lua',
     'modules/reserved/client.lua',
 
-    -- Integrations
-    'integrations/phone.lua',
+    -- Integrations (client-only: phone app registration)
+    'integrations/phone_client.lua',
 }
 
 -- Server scripts
@@ -85,6 +79,7 @@ server_scripts {
     'integrations/permissions.lua',
     'integrations/dispatch.lua',
     'integrations/billing.lua',
+    'integrations/phone.lua',
 
     -- Modules
     'modules/zones/server.lua',

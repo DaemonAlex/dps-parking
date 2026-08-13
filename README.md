@@ -110,13 +110,16 @@ end)
 
 ## Events
 
-Subscribe to events:
+Subscribe to events / register hooks:
 
 ```lua
-EventBus.Subscribe('parking:park', function(data) end)
-EventBus.Subscribe('parking:unpark', function(data) end)
+-- park / unpark are dispatched via post-hooks (EventBus.ExecutePostHooks)
+EventBus.RegisterPostHook('parking:park', function(data) end)
+EventBus.RegisterPostHook('parking:unpark', function(data) end)
+
+-- these are published via EventBus.Publish
 EventBus.Subscribe('parking:impounded', function(data) end)
-EventBus.Subscribe('meters:ticketIssued', function(data) end)
+EventBus.Subscribe('meters:expired', function(data) end)
 ```
 
 ## Commands

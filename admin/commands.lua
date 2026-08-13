@@ -32,16 +32,15 @@ RegisterCommand(Config.Commands.addVip, function(source, args)
     end
 
     State.SetVipPlayer(citizenid, {
+        citizenid = citizenid,
         slots = slots,
         perks = Config.VIP.perks,
         addedAt = os.time(),
         addedBy = source == 0 and 'Console' or Bridge.GetPlayerName(source)
     })
 
-    -- Update database
-    local tbl = Bridge.IsESX() and 'users' or 'players'
-    local col = Bridge.IsESX() and 'identifier' or 'citizenid'
-    MySQL.update.await(('UPDATE %s SET parkvip = 1, parkmax = ? WHERE %s = ?'):format(tbl, col), {slots, citizenid})
+    -- Persist to the dps_parking_vip table so VIP survives a restart (H1)
+    DB.SetVipPlayer(citizenid, slots, Config.VIP.perks, nil)
 
     Bridge.Notify(targetId, L('vip_added'), 'success')
     if source ~= 0 then
@@ -71,10 +70,8 @@ RegisterCommand(Config.Commands.removeVip, function(source, args)
 
     State.RemoveVipPlayer(citizenid)
 
-    -- Update database
-    local tbl = Bridge.IsESX() and 'users' or 'players'
-    local col = Bridge.IsESX() and 'identifier' or 'citizenid'
-    MySQL.update.await(('UPDATE %s SET parkvip = 0, parkmax = 0 WHERE %s = ?'):format(tbl, col), {citizenid})
+    -- Remove from the dps_parking_vip table (H1)
+    DB.RemoveVipPlayer(citizenid)
 
     Bridge.Notify(targetId, L('vip_removed'), 'info')
     if source ~= 0 then
@@ -113,13 +110,13 @@ RegisterCommand(Config.Commands.resetPlayer, function(source, args)
         State.RemoveParkedVehicle(plate)
     end
 
-    -- Reset in database
+    -- Reset in database: return parked vehicles to garage, clear JSON parking columns
     local tbl = Bridge.DB.GetVehicleTable()
     local owner = Bridge.DB.GetOwnerColumn()
     local state = Bridge.DB.GetStateColumn()
     MySQL.update.await(
-        ('UPDATE %s SET %s = 1, location = NULL, street = NULL WHERE %s = ? AND %s = 3'):format(tbl, state, owner, state),
-        {citizenid}
+        ('UPDATE %s SET %s = ?, parking_data = NULL, vehicle_state = NULL, parking_lot = NULL, parked_at = NULL WHERE %s = ? AND %s = ?'):format(tbl, state, owner, state),
+        {Bridge.DB.States.GARAGE, citizenid, Bridge.DB.States.PARKED}
     )
 
     TriggerClientEvent('dps-parking:client:syncParkedVehicles', -1, { vehicles = Parking.GetAllParked() })
@@ -146,12 +143,12 @@ RegisterCommand(Config.Commands.resetAll, function(source, args)
         State.RemoveParkedVehicle(plate)
     end
 
-    -- Reset database
+    -- Reset database: return all parked vehicles to garage, clear JSON parking columns
     local tbl = Bridge.DB.GetVehicleTable()
     local state = Bridge.DB.GetStateColumn()
     MySQL.update.await(
-        ('UPDATE %s SET %s = 1, location = NULL, street = NULL, parktime = 0 WHERE %s = 3'):format(tbl, state, state),
-        {}
+        ('UPDATE %s SET %s = ?, parking_data = NULL, vehicle_state = NULL, parking_lot = NULL, parked_at = NULL WHERE %s = ?'):format(tbl, state, state),
+        {Bridge.DB.States.GARAGE, Bridge.DB.States.PARKED}
     )
 
     TriggerClientEvent('dps-parking:client:syncParkedVehicles', -1, { vehicles = {} })
@@ -233,7 +230,7 @@ RegisterCommand('dpsparking', function(source, args)
         return
     end
 
-    Bridge.Notify(source, 'DPS-Parking v1.0.0 - Check console for commands', 'info')
+    Bridge.Notify(source, 'DPS-Parking v2.2.0 - Check console for commands', 'info')
 end, true)
 
 print('^2[DPS-Parking] Admin commands loaded^0')

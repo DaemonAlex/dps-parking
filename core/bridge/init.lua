@@ -23,14 +23,40 @@ Bridge.Frameworks = {
 -- FRAMEWORK DETECTION
 -- ============================================
 
+-- Build a QB/QBX-compatible core wrapper from DISCRETE exports.
+-- IMPORTANT: qbx_core (and qb-core on this build) throw on GetCoreObject().
+-- We never call GetCoreObject(); instead we wrap the individual exports so the
+-- rest of the code can keep using Bridge.Core.Functions.* transparently.
+---@param resourceName string
+---@return table
+local function BuildQBCore(resourceName)
+    if IsDuplicityVersion() then
+        -- Server context
+        return {
+            Functions = {
+                GetPlayer = function(src) return exports[resourceName]:GetPlayer(src) end,
+                GetPlayerByCitizenId = function(cid) return exports[resourceName]:GetPlayerByCitizenId(cid) end,
+                GetPlayers = function() return exports[resourceName]:GetQBPlayers() end,
+            }
+        }
+    else
+        -- Client context
+        return {
+            Functions = {
+                GetPlayerData = function() return exports[resourceName]:GetPlayerData() end,
+            }
+        }
+    end
+end
+
 local function DetectFramework()
     if GetResourceState('qbx_core') == 'started' then
         Bridge.Framework = Bridge.Frameworks.QBX
-        Bridge.Core = exports['qbx_core']:GetCoreObject()
+        Bridge.Core = BuildQBCore('qbx_core')
         return true
     elseif GetResourceState('qb-core') == 'started' then
         Bridge.Framework = Bridge.Frameworks.QB
-        Bridge.Core = exports['qb-core']:GetCoreObject()
+        Bridge.Core = BuildQBCore('qb-core')
         return true
     elseif GetResourceState('es_extended') == 'started' then
         Bridge.Framework = Bridge.Frameworks.ESX
@@ -47,8 +73,18 @@ end
 CreateThread(function()
     local attempts = 0
     local maxAttempts = 50 -- 5 seconds
+    local detected = false
 
-    while not DetectFramework() and attempts < maxAttempts do
+    while not detected and attempts < maxAttempts do
+        -- Wrap in pcall so a throwing export (e.g. GetCoreObject on this build)
+        -- can never kill this thread and leave Bridge.Ready stuck false forever.
+        local ok, result = pcall(DetectFramework)
+        if not ok then
+            print(('^1[DPS-Parking] Framework detection error: %s^0'):format(tostring(result)))
+        elseif result then
+            detected = true
+            break
+        end
         Wait(100)
         attempts = attempts + 1
     end

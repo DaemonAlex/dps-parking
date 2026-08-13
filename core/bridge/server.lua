@@ -6,8 +6,16 @@
     Server-side framework abstraction.
 ]]
 
--- Wait for bridge initialization
-Bridge.WaitReady()
+-- IMPORTANT: Do NOT block at the top level here.
+-- A top-level Bridge.WaitReady() yields the resource loader, which lets every
+-- later server_script (modules, integrations) run their file-scope code -
+-- including Bridge.CreateCallback(...) registrations - BEFORE the helpers below
+-- (CreateCallback, Bridge.DB, money/player functions) are ever defined, producing
+-- "attempt to call a nil value (field 'CreateCallback')" at boot.
+-- These functions only need Bridge.Core to exist when they are CALLED (at runtime,
+-- by which point init.lua has finished detection), not when they are DEFINED.
+-- Any file-scope work that genuinely needs readiness is done inside CreateThreads
+-- below that call Bridge.WaitReady() themselves.
 
 -- ============================================
 -- PLAYER FUNCTIONS
@@ -260,12 +268,17 @@ end
 ---@param name string
 ---@param cb function
 function Bridge.CreateCallback(name, cb)
-    if Bridge.Resources.HasOxLib() then
+    -- ox_lib ships with qbx (and is a hard dependency here), so register via ox_lib
+    -- unconditionally when present. Use the `lib` global directly so this never
+    -- depends on Bridge.Resources/Bridge.Core being populated yet at registration time.
+    if lib and lib.callback then
         lib.callback.register(name, cb)
-    elseif Bridge.IsESX() then
+    elseif Bridge.IsESX() and Bridge.Core then
         Bridge.Core.RegisterServerCallback(name, cb)
-    else
+    elseif Bridge.Core and Bridge.Core.Functions then
         Bridge.Core.Functions.CreateCallback(name, cb)
+    else
+        print(('^1[DPS-Parking] CreateCallback: no callback system available for "%s"^0'):format(name))
     end
 end
 
@@ -313,59 +326,68 @@ Bridge.DB.States = {
     PARKED = 3
 }
 
+-- NOTE (C3): Persistence routes through the JSON-column layer defined in
+-- core/database/queries.lua (DB.*). The schema (database/schema.sql) only creates
+-- JSON columns (parking_data, vehicle_state, parking_lot, parked_at) - it does NOT
+-- create legacy columns (location, street, steerangle, trailerdata). These wrappers
+-- keep their existing signatures/return shapes so call sites in the parking, admin
+-- and garages layers are unchanged, but write/read the columns the schema defines.
+-- The global DB table is loaded immediately after this file; these closures resolve
+-- it at call-time, so ordering is safe.
+
+---Convert a plate-keyed map (from DB.*) into an array (legacy call sites expect ipairs)
+---@param map table<string, table>
+---@return table
+local function MapToArray(map)
+    local list = {}
+    for _, v in pairs(map or {}) do
+        list[#list + 1] = v
+    end
+    return list
+end
+
 ---Get parked vehicles for player
 ---@param citizenid string
 ---@return table
 function Bridge.DB.GetParkedVehicles(citizenid)
-    local tbl = Bridge.DB.GetVehicleTable()
-    local owner = Bridge.DB.GetOwnerColumn()
-    local state = Bridge.DB.GetStateColumn()
-
-    return MySQL.query.await(
-        ('SELECT * FROM %s WHERE %s = ? AND %s = ?'):format(tbl, owner, state),
-        {citizenid, Bridge.DB.States.PARKED}
-    )
+    return MapToArray(DB.GetPlayerParkedVehicles(citizenid))
 end
 
 ---Get all parked vehicles
 ---@return table
 function Bridge.DB.GetAllParkedVehicles()
-    local tbl = Bridge.DB.GetVehicleTable()
-    local state = Bridge.DB.GetStateColumn()
-
-    return MySQL.query.await(
-        ('SELECT * FROM %s WHERE %s = ?'):format(tbl, state),
-        {Bridge.DB.States.PARKED}
-    )
+    return MapToArray(DB.GetAllParkedVehicles())
 end
 
----Set vehicle as parked
+---Set vehicle as parked (writes JSON schema columns via DB.ParkVehicle)
 ---@param plate string
 ---@param location table
 ---@param street string
 ---@param steerangle number
 ---@param fuel number
 ---@param trailerdata? table
-function Bridge.DB.SetVehicleParked(plate, location, street, steerangle, fuel, trailerdata)
-    local tbl = Bridge.DB.GetVehicleTable()
-    local state = Bridge.DB.GetStateColumn()
-
-    MySQL.update.await(
-        ('UPDATE %s SET %s = ?, location = ?, street = ?, steerangle = ?, fuel = ?, trailerdata = ? WHERE plate = ?'):format(tbl, state),
-        {Bridge.DB.States.PARKED, json.encode(location), street, steerangle, fuel, json.encode(trailerdata or {}), plate}
-    )
+---@param extra? table Additional persisted state { citizenid, mods, damage, extras, neon, lotId }
+function Bridge.DB.SetVehicleParked(plate, location, street, steerangle, fuel, trailerdata, extra)
+    extra = extra or {}
+    DB.ParkVehicle(plate, extra.citizenid, {
+        location = location,
+        street = street,
+        steerangle = steerangle,
+        heading = location and (location.h or location.w) or nil,
+        fuel = fuel,
+        trailerdata = trailerdata,
+        mods = extra.mods,
+        damage = extra.damage,
+        extras = extra.extras,
+        neon = extra.neon,
+        lotId = extra.lotId,
+    })
 end
 
----Set vehicle as out (unparked)
+---Set vehicle as out (unparked) - clears JSON parking columns via DB.UnparkVehicle
 ---@param plate string
 function Bridge.DB.SetVehicleOut(plate)
-    local tbl = Bridge.DB.GetVehicleTable()
-    local state = Bridge.DB.GetStateColumn()
-
-    MySQL.update.await(
-        ('UPDATE %s SET %s = ?, location = NULL, street = NULL, trailerdata = NULL WHERE plate = ?'):format(tbl, state),
-        {Bridge.DB.States.OUT, plate}
-    )
+    DB.UnparkVehicle(plate)
 end
 
 ---Set vehicle as impounded
@@ -407,7 +429,10 @@ end
 ---@param source number
 ---@return boolean
 function Bridge.IsAdmin(source)
-    return IsPlayerAceAllowed(source, 'admin') or IsPlayerAceAllowed(source, 'command')
+    -- qbx grants admins the `group.admin` ace; keep `admin`/`command` for other setups.
+    return IsPlayerAceAllowed(source, 'group.admin')
+        or IsPlayerAceAllowed(source, 'admin')
+        or IsPlayerAceAllowed(source, 'command')
 end
 
 -- ============================================

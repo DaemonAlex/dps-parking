@@ -2,7 +2,7 @@
     DPS-Parking - Unified Configuration
     Original: mh-parking by MaDHouSe79
     Enhanced: DPS Development
-    Version: 1.0.0
+    Version: 2.2.0
 
     Single configuration file for all parking system settings.
 ]]
@@ -289,5 +289,104 @@ Config.PrivateParking = {
     -- Reserved spots that require ownership/permission
     -- Can be added dynamically through admin commands
 }
+
+-- ============================================
+-- VALET SERVICE
+-- ============================================
+-- Required by modules/valet/server.lua. Without this table valet is always
+-- reported "disabled". Each location needs an id, coords, a set of parkingSpots
+-- the valet fills, and an optional retrievalPoint (defaults to coords).
+
+Config.Valet = {
+    enabled = true,
+
+    locations = {
+        {
+            id = 'legion',
+            name = 'Legion Square Valet',
+            coords = vector3(215.9, -810.2, 30.7),      -- valet stand / interaction point
+            retrievalPoint = vector4(223.5, -799.5, 30.5, 68.0), -- where retrieved cars appear
+            npcModel = 's_m_y_valet_01',
+            blip = { sprite = 357, color = 3, scale = 0.7 },
+            -- Off-street stalls the valet parks vehicles into
+            parkingSpots = {
+                { coords = vector3(210.4, -799.6, 30.7), occupied = false },
+                { coords = vector3(213.1, -800.9, 30.7), occupied = false },
+                { coords = vector3(215.8, -802.2, 30.7), occupied = false },
+                { coords = vector3(218.5, -803.5, 30.7), occupied = false },
+            },
+        },
+    },
+}
+
+-- ============================================
+-- RESERVED SPOTS
+-- ============================================
+-- Required by modules/reserved/server.lua + client.lua. Without Config.Reserved.spots
+-- no reserved spots exist. `enabled` gates the client markers/validation hook.
+
+Config.Reserved = {
+    enabled = true,
+    showMarkers = true,
+
+    -- type: 'vip' | 'job' | 'business' | 'rental'
+    spots = {
+        {
+            id = 'vip_vinewood_1',
+            name = 'Vinewood VIP Stall',
+            coords = vector3(65.4, 24.4, 68.9),
+            type = 'vip',
+        },
+        {
+            id = 'pd_reserved_1',
+            name = 'MRPD Reserved',
+            coords = vector3(452.8, -993.2, 30.7),
+            type = 'job',
+            requiredJob = 'police',
+            requiredGrade = 0,
+            requireOnDuty = false,
+        },
+        -- Example rental spot (rentable via /rentspot)
+        {
+            id = 'rental_legion_1',
+            name = 'Legion Rental Spot',
+            coords = vector3(228.7, -790.0, 30.0),
+            type = 'rental',
+        },
+    },
+}
+
+-- ============================================
+-- PARKING VIOLATIONS / TICKETS
+-- ============================================
+-- Required by modules/violations/server.lua. `autoTicket` enables automated
+-- tickets on meter expiry and zone violations.
+
+Config.Violations = {
+    enabled = true,
+    autoTicket = true,   -- Issue automatic tickets on meter expiry / zone violations
+}
+
+-- ============================================
+-- DISPATCH ALERTS
+-- ============================================
+-- Required by integrations/dispatch.lua. Gates the automatic police alerts.
+
+Config.Dispatch = {
+    enabled = true,
+    alertOnMeterExpiry = true,   -- Alert police when a meter expires past grace
+    alertOnZoneViolation = true, -- Alert police on no-parking zone violations
+}
+
+-- ============================================
+-- VEHICLE TYPE OVERRIDES
+-- ============================================
+-- Optional. Referenced by modules/parking/server.lua when respawning parked
+-- vehicles: Config.Vehicles[model].type feeds CreateVehicleServerSetter.
+-- Defaults to 'automobile' when a model is absent. Add entries only for
+-- non-automobile spawns (e.g. bikes, boats, helis, planes).
+-- Example: ['sanchez'] = { type = 'bike' }, ['seashark'] = { type = 'boat' }
+
+Config.Vehicles = {}
 
 return Config

@@ -386,6 +386,26 @@ Bridge.CreateCallback('dps-parking:server:getMyTickets', function(source, cb)
     cb(Violations.GetPlayerTickets(citizenid))
 end)
 
+-- ============================================
+-- MAINTENANCE (M3: prune old resolved tickets)
+-- ============================================
+
+CreateThread(function()
+    Bridge.WaitReady()
+    while true do
+        Wait(3600000) -- hourly
+        local now = os.time()
+        local retention = 7 * 86400 -- keep paid/dismissed tickets for 7 days
+        for id, ticket in pairs(Violations._tickets) do
+            local resolved = ticket.status == 'paid' or ticket.status == 'dismissed'
+            local anchor = ticket.paidAt or ticket.issuedAt or now
+            if resolved and (now - anchor) > retention then
+                Violations._tickets[id] = nil
+            end
+        end
+    end
+end)
+
 print('^2[DPS-Parking] Violations module (server) loaded^0')
 
 return Violations

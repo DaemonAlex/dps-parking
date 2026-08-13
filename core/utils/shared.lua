@@ -312,6 +312,31 @@ function Utils.IsInParkingLot(coords)
 end
 
 -- ============================================
+-- CLIENT DRAWING (client-only; referenced by reserved/client.lua)
+-- ============================================
+
+---Draw 3D world text (client only). No-op / guarded on the server.
+---@param x number
+---@param y number
+---@param z number
+---@param text string
+function Utils.Draw3DText(x, y, z, text)
+    if IsDuplicityVersion() then return end -- server has no draw natives
+
+    local onScreen, screenX, screenY = World3dToScreen2d(x, y, z)
+    if not onScreen then return end
+
+    SetTextScale(0.35, 0.35)
+    SetTextFont(4)
+    SetTextProportional(1)
+    SetTextColour(255, 255, 255, 215)
+    SetTextEntry("STRING")
+    SetTextCentre(true)
+    AddTextComponentString(text)
+    DrawText(screenX, screenY)
+end
+
+-- ============================================
 -- DEBUG
 -- ============================================
 

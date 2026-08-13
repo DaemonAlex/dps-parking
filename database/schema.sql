@@ -1,14 +1,19 @@
---[[
-    DPS-Parking - Database Schema
-    Original: mh-parking by MaDHouSe79
-    Enhanced: DPS Development
+-- =====================================================================
+-- DPS-Parking - Database Schema
+-- Original: mh-parking by MaDHouSe79
+-- Enhanced: DPS Development
+--
+-- Run this SQL to add required columns for vehicle state persistence.
+-- Uses JSON columns for efficient single-query fetches.
+--
+-- Import with:  mysql <database> < database/schema.sql
+-- Target here is QBox/QBCore (player_vehicles). The ESX (owned_vehicles)
+-- block is commented out so it does not error on a box without that table -
+-- ESX users: uncomment the ESX section below.
+-- =====================================================================
 
-    Run this SQL to add required columns for vehicle state persistence.
-    Uses JSON columns for efficient single-query fetches.
-]]
-
--- Add parking columns to player_vehicles (QBCore) / owned_vehicles (ESX)
--- Run the appropriate version for your framework:
+-- Add parking columns to player_vehicles (QBCore/QBox).
+-- For ESX (owned_vehicles) uncomment the ESX section further down.
 
 -- ==========================================
 -- QBCore: player_vehicles table
@@ -27,7 +32,10 @@ CREATE INDEX IF NOT EXISTS `idx_parking_lot` ON `player_vehicles` (`parking_lot`
 -- ==========================================
 -- ESX: owned_vehicles table
 -- ==========================================
-
+-- DISABLED by default: this box is QBox (player_vehicles). Running these
+-- against a database without an `owned_vehicles` table aborts the import.
+-- ESX users: remove the surrounding /* */ to enable.
+/*
 ALTER TABLE `owned_vehicles`
     ADD COLUMN IF NOT EXISTS `parking_data` JSON DEFAULT NULL COMMENT 'DPS-Parking: location, street, steerangle',
     ADD COLUMN IF NOT EXISTS `vehicle_state` JSON DEFAULT NULL COMMENT 'DPS-Parking: damage, fuel, extras, neon',
@@ -37,6 +45,7 @@ ALTER TABLE `owned_vehicles`
 -- Index for efficient parked vehicle queries
 CREATE INDEX IF NOT EXISTS `idx_parking_stored` ON `owned_vehicles` (`stored`, `parked_at`);
 CREATE INDEX IF NOT EXISTS `idx_parking_lot` ON `owned_vehicles` (`parking_lot`);
+*/
 
 -- ==========================================
 -- DPS-Parking: VIP Players table

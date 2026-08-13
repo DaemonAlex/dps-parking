@@ -204,16 +204,26 @@ end
 ---@param reason string
 ---@return boolean success
 function Billing.DepositToSociety(amount, reason)
-    local script = Billing.Detect()
     local society = Billing.Config.societyAccount
 
-    if script == 'qs-billing' or GetResourceState('qs-banking') == 'started' then
-        -- QS Banking society deposit
+    -- M5: guard every branch on the banking resource actually being started, so a
+    -- detected billing script never triggers a missing qs-banking export. This box
+    -- runs Renewed-Banking + qbx_management (NOT qs-banking).
+    if GetResourceState('qs-banking') == 'started' then
         exports['qs-banking']:AddMoney(society, amount, reason)
         return true
 
+    elseif GetResourceState('Renewed-Banking') == 'started' then
+        -- Renewed-Banking society deposit
+        local ok = pcall(function() exports['Renewed-Banking']:addAccountMoney(society, amount) end)
+        return ok
+
+    elseif GetResourceState('qbx_management') == 'started' then
+        -- qbx_management society account
+        local ok = pcall(function() exports.qbx_management:AddMoney(society, amount) end)
+        return ok
+
     elseif GetResourceState('qb-banking') == 'started' then
-        -- QB Banking
         exports['qb-banking']:AddMoney(society, amount, reason)
         return true
 

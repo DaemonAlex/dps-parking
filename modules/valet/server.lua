@@ -483,16 +483,41 @@ end)
 RegisterNetEvent('dps-parking:server:valetStoreData', function(plate, vehicleData)
     local source = source
     local citizenid = Bridge.GetCitizenId(source)
+    if not citizenid then return end
 
-    if Valet._parkedByValet[plate] and Valet._parkedByValet[plate].citizenid == citizenid then
-        Valet._parkedByValet[plate].vehicleData = vehicleData
-    end
+    -- M1: don't blindly trust the client vehicle blob. Require an active valet
+    -- session for this plate owned by the caller AND server-verified ownership.
+    local session = Valet._parkedByValet[plate]
+    if not session or session.citizenid ~= citizenid then return end
+    if not Bridge.DB.PlayerOwnsVehicle(citizenid, plate) then return end
+
+    session.vehicleData = vehicleData
 end)
 
 -- Callback for player's valet vehicles
 Bridge.CreateCallback('dps-parking:server:getValetVehicles', function(source, cb)
     local citizenid = Bridge.GetCitizenId(source)
     cb(Valet.GetPlayerVehicles(citizenid))
+end)
+
+-- ============================================
+-- MAINTENANCE (M3: prune stale in-memory sessions)
+-- ============================================
+
+CreateThread(function()
+    Bridge.WaitReady()
+    while true do
+        Wait(300000) -- every 5 minutes
+        local now = os.time()
+        for sessionId, session in pairs(Valet._sessions) do
+            -- A session should have completed long ago; if it lingers > 10 min
+            -- past its completion time, its SetTimeout was lost (e.g. resource churn).
+            if session.completesAt and (now - session.completesAt) > 600 then
+                RemoveFromQueue(session.locationId, sessionId)
+                Valet._sessions[sessionId] = nil
+            end
+        end
+    end
 end)
 
 print('^2[DPS-Parking] Valet module (server) loaded^0')

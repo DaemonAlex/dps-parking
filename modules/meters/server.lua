@@ -28,6 +28,12 @@ function Meters.Pay(source, plate, minutes)
         return false, L('error')
     end
 
+    -- M2: only the vehicle owner may pay its meter
+    plate = Utils.FormatPlate(plate)
+    if not Bridge.DB.PlayerOwnsVehicle(citizenid, plate) then
+        return false, L('not_owner')
+    end
+
     -- Validate time
     if minutes < Config.Meters.minimumMinutes then
         minutes = Config.Meters.minimumMinutes
@@ -126,11 +132,17 @@ local function CheckExpiredMeters()
 
             Utils.Debug(('Meter expired for %s, issuing ticket of %s'):format(plate, ticketAmount))
 
-            -- TODO: Issue ticket to owner
-            EventBus.Publish('meters:ticketIssued', {
+            -- H4: publish 'meters:expired' (was 'meters:ticketIssued') - this is the
+            -- name that violations (auto-ticket), dispatch (alert) and audit all listen for.
+            -- Include location/street so dispatch can place the alert.
+            local parkedVehicle = State.GetParkedVehicle(plate)
+            local loc = parkedVehicle and parkedVehicle.location
+            EventBus.Publish('meters:expired', {
                 plate = plate,
                 citizenid = meterData.citizenid,
-                amount = ticketAmount
+                amount = ticketAmount,
+                location = loc and vector3(loc.x, loc.y, loc.z) or nil,
+                street = parkedVehicle and parkedVehicle.street or nil,
             })
 
             -- Check if should tow
@@ -138,7 +150,6 @@ local function CheckExpiredMeters()
             if expiredTime > towTime then
                 Utils.Debug(('Towing vehicle %s for expired meter'):format(plate))
 
-                local parkedVehicle = State.GetParkedVehicle(plate)
                 if parkedVehicle then
                     Bridge.PoliceImpound(plate, true, ticketAmount,
                         parkedVehicle.body, parkedVehicle.engine, parkedVehicle.fuel)
