@@ -44,7 +44,9 @@ function Billing.Detect()
         'qb-billing',
         'esx_billing',
         'okokBilling',
-        'renewed-banking',  -- Has billing
+        -- NOTE: Renewed-Banking (on this box) is a banking backend, NOT an invoice/bill
+        -- provider — there is no CreateTicketInvoice branch for it, so it is intentionally
+        -- NOT listed here. With no billing script, ticket/violation fees charge directly.
     }
 
     for _, script in ipairs(scripts) do

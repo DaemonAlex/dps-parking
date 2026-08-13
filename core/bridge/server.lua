@@ -618,8 +618,9 @@ function Bridge.Integrations.Detect()
                     Bridge.Resources.Exists('ox_inventory') and 'ox_inventory' or
                     nil,
 
-        -- Management
-        management = Bridge.Resources.Exists('qb-management') and 'qb-management' or
+        -- Management (qbx_management is the Qbox-native society provider on this stack)
+        management = Bridge.Resources.Exists('qbx_management') and 'qbx_management' or
+                     Bridge.Resources.Exists('qb-management') and 'qb-management' or
                      Bridge.Resources.Exists('okokBossMenu') and 'okokBossMenu' or
                      nil,
 
