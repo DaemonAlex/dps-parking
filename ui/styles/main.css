@@ -1,30 +1,39 @@
 /* DPS Parking - Modern Dashboard UI */
-/* Dark theme with glass morphism */
+/* Coastal-dusk theme with glass morphism */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
 
 :root {
-    /* Colors */
-    --bg-primary: rgba(15, 15, 20, 0.95);
-    --bg-secondary: rgba(25, 25, 35, 0.9);
-    --bg-card: rgba(35, 35, 50, 0.8);
-    --bg-hover: rgba(50, 50, 70, 0.8);
-    --bg-glass: rgba(255, 255, 255, 0.05);
+    /* Canonical coastal-dusk palette */
+    --cd-night:#0a0d18; --cd-deep:#0f1424; --cd-panel:#151b30; --cd-raised:#1b2340; --cd-border:#26304d;
+    --cd-ink:#f4f1ea; --cd-dim:#aeb6d2;
+    --cd-sun:#ff7a45; --cd-sun2:#ffab6b; --cd-sun-dim:#2a1206;
+    --cd-sea:#4ec9b0; --cd-cool:#5bc8e8;
+    --cd-ok:#4ec98a; --cd-warn:#ffb347; --cd-bad:#ff6b6b;
 
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.7);
-    --text-muted: rgba(255, 255, 255, 0.5);
+    /* Component tokens mapped onto coastal-dusk roles */
+    --bg-primary: rgba(15, 20, 36, 0.95);    /* cd-deep */
+    --bg-secondary: rgba(21, 27, 48, 0.9);   /* cd-panel */
+    --bg-card: rgba(27, 35, 64, 0.8);        /* cd-raised */
+    --bg-hover: rgba(38, 48, 77, 0.85);      /* cd-border */
+    --bg-glass: rgba(244, 241, 234, 0.05);   /* cd-ink glass */
 
-    --accent-primary: #6366f1;
-    --accent-secondary: #8b5cf6;
-    --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --text-primary: var(--cd-ink);
+    --text-secondary: var(--cd-dim);
+    --text-muted: rgba(174, 182, 210, 0.6);  /* dim, softened */
 
-    --success: #22c55e;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --info: #3b82f6;
+    --accent-primary: var(--cd-sun);
+    --accent-secondary: var(--cd-sun2);
+    --accent-gradient: linear-gradient(135deg, var(--cd-sun) 0%, var(--cd-sun2) 100%);
 
-    --border-color: rgba(255, 255, 255, 0.1);
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+    --success: var(--cd-ok);
+    --warning: var(--cd-warn);
+    --danger: var(--cd-bad);
+    --info: var(--cd-sea);
+
+    --border-color: var(--cd-border);
+    --shadow: 0 8px 32px rgba(10, 13, 24, 0.4);
+    --shadow-lg: 0 16px 48px rgba(10, 13, 24, 0.5);
 
     /* Sizing */
     --radius-sm: 6px;
@@ -46,7 +55,7 @@
 }
 
 body {
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Roboto', sans-serif;
     background: transparent;
     color: var(--text-primary);
     overflow: hidden;
@@ -66,7 +75,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(10, 13, 24, 0.5);
     backdrop-filter: blur(4px);
     animation: fadeIn 0.3s ease;
 }
@@ -133,6 +142,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    font-family: 'Orbitron', sans-serif;
     font-size: 20px;
     font-weight: 700;
 }
@@ -261,8 +271,9 @@ body {
 }
 
 .content-header h2 {
+    font-family: 'Orbitron', sans-serif;
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* Search Box */
@@ -315,7 +326,7 @@ body {
     background: var(--bg-hover);
     border-color: var(--accent-primary);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 8px 24px rgba(255, 122, 69, 0.15);
 }
 
 .vehicle-card-header {
@@ -326,8 +337,9 @@ body {
 }
 
 .vehicle-plate {
+    font-family: 'Roboto Mono', monospace;
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: 1px;
 }
 
@@ -340,17 +352,17 @@ body {
 }
 
 .vehicle-status.parked {
-    background: rgba(34, 197, 94, 0.2);
+    background: rgba(78, 201, 138, 0.2);
     color: var(--success);
 }
 
 .vehicle-status.delivering {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(78, 201, 176, 0.2);
     color: var(--info);
 }
 
 .vehicle-status.expired {
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba(255, 107, 107, 0.2);
     color: var(--danger);
 }
 
@@ -483,6 +495,7 @@ body {
 }
 
 .empty-state h3 {
+    font-family: 'Orbitron', sans-serif;
     font-size: 18px;
     margin-bottom: 8px;
 }
@@ -542,17 +555,17 @@ body {
 }
 
 .delivery-status.pending {
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(255, 179, 71, 0.2);
     color: var(--warning);
 }
 
 .delivery-status.inprogress {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(78, 201, 176, 0.2);
     color: var(--info);
 }
 
 .delivery-status.completed {
-    background: rgba(34, 197, 94, 0.2);
+    background: rgba(78, 201, 138, 0.2);
     color: var(--success);
 }
 
@@ -639,14 +652,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(255, 179, 71, 0.2);
     border-radius: var(--radius-md);
     font-size: 20px;
     color: var(--warning);
 }
 
 .meter-icon.expiring {
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba(255, 107, 107, 0.2);
     color: var(--danger);
     animation: pulse 1s infinite;
 }
@@ -673,8 +686,9 @@ body {
 }
 
 .time-remaining {
+    font-family: 'Roboto Mono', monospace;
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text-primary);
     min-width: 60px;
 }
@@ -741,7 +755,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba(255, 107, 107, 0.2);
     border-radius: var(--radius-md);
     font-size: 20px;
     color: var(--danger);
@@ -788,8 +802,9 @@ body {
 }
 
 .ticket-amount .amount {
+    font-family: 'Roboto Mono', monospace;
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--danger);
 }
 
@@ -806,7 +821,8 @@ body {
 }
 
 .ticket-pay:hover {
-    background: #16a34a;
+    background: var(--success);
+    filter: brightness(0.9);
 }
 
 /* Modal */
@@ -829,7 +845,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(10, 13, 24, 0.6);
     backdrop-filter: blur(4px);
 }
 
@@ -853,8 +869,9 @@ body {
 }
 
 .modal-header h2 {
+    font-family: 'Orbitron', sans-serif;
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .modal-body {
@@ -935,9 +952,9 @@ body {
     font-size: 14px;
 }
 
-.stat-icon.fuel { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-.stat-icon.body { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-.stat-icon.engine { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+.stat-icon.fuel { background: rgba(255, 179, 71, 0.2); color: var(--warning); }
+.stat-icon.body { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
+.stat-icon.engine { background: rgba(78, 201, 176, 0.2); color: var(--info); }
 
 .stat-info {
     flex: 1;
@@ -992,7 +1009,7 @@ body {
 
 .delivery-option.selected {
     border-color: var(--accent-primary);
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(255, 122, 69, 0.1);
 }
 
 .option-icon {
@@ -1008,7 +1025,7 @@ body {
 }
 
 .option-icon.rush {
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(255, 179, 71, 0.2);
     color: var(--warning);
 }
 
@@ -1027,8 +1044,9 @@ body {
 }
 
 .option-price {
+    font-family: 'Roboto Mono', monospace;
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--accent-primary);
 }
 
@@ -1130,7 +1148,7 @@ body {
 
 .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 12px rgba(255, 122, 69, 0.4);
 }
 
 .btn-secondary {
@@ -1165,7 +1183,8 @@ body {
 }
 
 .btn-warning:hover {
-    background: #d97706;
+    background: var(--warning);
+    filter: brightness(0.92);
 }
 
 /* Toast Notifications */
@@ -1218,10 +1237,10 @@ body {
 .toast-warning i { color: var(--warning); }
 .toast-info i { color: var(--info); }
 
-.toast.success .toast-icon { background: rgba(34, 197, 94, 0.2); color: var(--success); }
-.toast.error .toast-icon { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-.toast.warning .toast-icon { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-.toast.info .toast-icon { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+.toast.success .toast-icon { background: rgba(78, 201, 138, 0.2); color: var(--success); }
+.toast.error .toast-icon { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
+.toast.warning .toast-icon { background: rgba(255, 179, 71, 0.2); color: var(--warning); }
+.toast.info .toast-icon { background: rgba(78, 201, 176, 0.2); color: var(--info); }
 
 @keyframes fadeOut {
     from {
@@ -1264,7 +1283,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(244, 241, 234, 0.2);
 }
 
 /* Responsive */
