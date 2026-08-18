@@ -36,7 +36,7 @@ end
 
 RegisterNetEvent('dps-parking:client:meterPaid', function(data)
     activeMeters[data.plate] = data
-    Bridge.Notify(L('meter_paid', Utils.FormatTime((data.expiresAt - os.time()))), 'success')
+    Bridge.Notify(L('meter_paid', Utils.FormatTime((data.expiresAt - GetCloudTimeAsInt()))), 'success')
 end)
 
 RegisterNetEvent('dps-parking:client:meterExpired', function(data)
@@ -50,7 +50,7 @@ end)
 
 CreateThread(function()
     while true do
-        local now = os.time()
+        local now = GetCloudTimeAsInt()
 
         for plate, data in pairs(activeMeters) do
             if data.expiresAt then

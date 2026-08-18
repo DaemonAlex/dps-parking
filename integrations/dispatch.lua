@@ -32,6 +32,7 @@ function Dispatch.Detect()
     end
 
     local scripts = {
+        'wasabi_mdt', -- DPS: centralized justice dispatch, always preferred
         'qs-dispatch',
         'ps-dispatch',
         'cd_dispatch',
@@ -68,7 +69,18 @@ function Dispatch.SendParkingAlert(data)
     local coords = data.location or vector3(0, 0, 0)
     local street = data.street or 'Unknown Location'
 
-    if script == 'qs-dispatch' then
+    if script == 'wasabi_mdt' then
+        pcall(function()
+            exports['wasabi_mdt']:CreateDispatch({
+                title = 'Parking Violation',
+                code = '10-50',
+                description = ('%s — plate %s @ %s'):format(
+                    data.description or 'Parking violation reported',
+                    data.plate or 'unknown', street),
+                coords = coords,
+            })
+        end)
+    elseif script == 'qs-dispatch' then
         TriggerEvent('qs-dispatch:server:CreateDispatchCall', {
             job = 'police',
             callLocation = coords,
