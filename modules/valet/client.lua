@@ -10,6 +10,7 @@
     - Retrieval spawning
 ]]
 
+local AddValetTarget -- forward declaration: defined below, called from SpawnValetPed
 local valetPeds = {}
 local valetBlips = {}
 local activeSession = nil
@@ -82,7 +83,7 @@ end
 ---Add target interaction to valet ped
 ---@param location table
 ---@param ped number
-local function AddValetTarget(location, ped)
+AddValetTarget = function(location, ped)
     local target = Bridge.Resources.GetTarget()
     if not target then return end
 
@@ -282,7 +283,7 @@ end
 ---@param timestamp number
 ---@return string
 function FormatTimeAgo(timestamp)
-    local diff = os.time() - timestamp
+    local diff = GetCloudTimeAsInt() - timestamp
     if diff < 60 then
         return 'just now'
     elseif diff < 3600 then

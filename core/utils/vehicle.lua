@@ -235,7 +235,7 @@ function VehicleData.GetVisualState(vehicle)
 
         -- Tyre smoke
         tyreSmokeColor = nil,
-    end
+    }
 
     -- Get colors
     local colorPrimary, colorSecondary = GetVehicleColours(vehicle)
