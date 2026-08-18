@@ -283,7 +283,8 @@ end
 ---@param timestamp number
 ---@return string
 function FormatTimeAgo(timestamp)
-    local diff = GetCloudTimeAsInt() - timestamp
+    local ct = GetCloudTimeAsInt()
+    local diff = ((ct and ct > 0) and ct or os.time()) - timestamp
     if diff < 60 then
         return 'just now'
     elseif diff < 3600 then
