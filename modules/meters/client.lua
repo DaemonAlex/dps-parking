@@ -8,6 +8,13 @@
 
 local activeMeters = {}
 
+-- GetCloudTimeAsInt() returns 0 until cloud time syncs after join; fall back to
+-- os.time() so early-session meter math doesn't produce absurd remaining times.
+local function wallClock()
+    local ct = GetCloudTimeAsInt()
+    return (ct and ct > 0) and ct or os.time()
+end
+
 -- ============================================
 -- METER PAYMENT
 -- ============================================
@@ -36,7 +43,7 @@ end
 
 RegisterNetEvent('dps-parking:client:meterPaid', function(data)
     activeMeters[data.plate] = data
-    Bridge.Notify(L('meter_paid', Utils.FormatTime((data.expiresAt - GetCloudTimeAsInt()))), 'success')
+    Bridge.Notify(L('meter_paid', Utils.FormatTime((data.expiresAt - wallClock()))), 'success')
 end)
 
 RegisterNetEvent('dps-parking:client:meterExpired', function(data)
@@ -50,14 +57,16 @@ end)
 
 CreateThread(function()
     while true do
-        local now = GetCloudTimeAsInt()
+        local now = wallClock()
 
         for plate, data in pairs(activeMeters) do
             if data.expiresAt then
                 local remaining = data.expiresAt - now
 
-                -- Warn at 5 minutes
-                if remaining > 0 and remaining <= 300 and remaining > 295 then
+                -- Warn once at <= 5 minutes (a per-meter flag, not a 5s window
+                -- the loop period could skip on a hitch)
+                if remaining > 0 and remaining <= 300 and not data._warned then
+                    data._warned = true
                     Bridge.Notify(L('meter_expiring', Utils.FormatTime(remaining)), 'warning')
                 end
 
