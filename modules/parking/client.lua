@@ -195,7 +195,7 @@ CreateThread(function()
                         if not shouldDisplay and data.citizenid == Bridge.GetCitizenId() then
                             shouldDisplay = true
                         end
-                        if not shouldDisplay and Config.Parking.displayToPolice and (playerJob == 'police' or playerJob == 'sheriff') then
+                        if not shouldDisplay and Config.Parking.displayToPolice and (playerJob == 'police' or playerJob == 'bcso' or playerJob == 'sasp' or playerJob == 'rpd' or playerJob == 'rcso') then -- DPS 2026-09-25: patrol set
                             shouldDisplay = true
                         end
 

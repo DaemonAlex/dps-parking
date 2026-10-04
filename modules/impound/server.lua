@@ -33,7 +33,7 @@ Impound.Config = {
     dailyFeeIncrease = 100,
     maxDailyFees = 10,  -- Cap at 10 days of fees
     -- Jobs that can impound
-    authorizedJobs = { 'police', 'sheriff', 'highway', 'sasp', 'bcso' },
+    authorizedJobs = { 'police', 'bcso', 'sasp', 'rpd', 'rcso' }, -- DPS 2026-09-25: patrol set
     -- Require on-duty for impound
     requireOnDuty = true,
 }

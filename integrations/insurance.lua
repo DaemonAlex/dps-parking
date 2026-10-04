@@ -31,7 +31,7 @@ function Insurance.Detect()
     end
 
     local scripts = {
-        'm-insurance',           -- User's script
+        'dps-insurance',         -- DPS link to m-Insurance (2026-10-02)
         'qs-insurance',
         'qb-vehicleinsurance',
         'wasabi_insurance',
@@ -71,9 +71,9 @@ function Insurance.IsVehicleInsured(plate)
         return false
     end
 
-    if script == 'm-insurance' then
-        -- M-Insurance
-        local insured = exports['m-insurance']:IsVehicleInsured(plate)
+    if script == 'dps-insurance' then
+        -- m-Insurance, read through dps-insurance
+        local insured = exports['dps-insurance']:IsVehicleInsured(plate)
         return insured == true
 
     elseif script == 'qs-insurance' then
