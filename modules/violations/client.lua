@@ -181,7 +181,7 @@ end, false)
 
 RegisterCommand('issueticket', function()
     local job = Bridge.GetJobName()
-    local authorizedJobs = { 'police', 'sheriff', 'parking_enforcement' }
+    local authorizedJobs = { 'police', 'bcso', 'sasp', 'rpd', 'rcso' } -- DPS 2026-09-25: patrol set
 
     for _, j in ipairs(authorizedJobs) do
         if job == j then

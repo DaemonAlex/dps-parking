@@ -37,7 +37,7 @@ Violations.Config = {
     -- Max unpaid tickets before impound risk
     maxUnpaidTickets = 5,
     -- Jobs that can issue tickets
-    authorizedJobs = { 'police', 'sheriff', 'parking_enforcement' },
+    authorizedJobs = { 'police', 'bcso', 'sasp', 'rpd', 'rcso' }, -- DPS 2026-09-25: patrol set (sheriff/parking_enforcement were not jobs)
 }
 
 -- ============================================

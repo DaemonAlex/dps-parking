@@ -41,7 +41,8 @@ Permissions.Config = {
             viewTicketHistory = 1,  -- Officer+ can view
             dismissTicket = 5,      -- Captain+ can dismiss
         },
-        ['lspd'] = {  -- Los Santos Police Department
+        -- DPS 2026-09-25: lspd/sheriff/sahp/highway/ranger removed (not jobs here); rpd/rcso added
+        ['rpd'] = {  -- Roxwood Police Department
             issueTicket = 1,
             checkMeters = 1,
             bootVehicle = 2,
@@ -51,7 +52,7 @@ Permissions.Config = {
             viewTicketHistory = 1,
             dismissTicket = 5,
         },
-        ['sheriff'] = {
+        ['rcso'] = {  -- Roxwood County Sheriff's Office
             issueTicket = 1,
             checkMeters = 1,
             bootVehicle = 2,
@@ -80,36 +81,6 @@ Permissions.Config = {
             releaseImpound = 3,
             viewTicketHistory = 1,
             dismissTicket = 4,
-        },
-        ['sahp'] = {  -- San Andreas Highway Patrol
-            issueTicket = 0,        -- All highway patrol can ticket
-            checkMeters = 0,
-            bootVehicle = 1,
-            impoundVehicle = 1,     -- Highway has more impound authority
-            impoundCriminal = 0,
-            releaseImpound = 2,
-            viewTicketHistory = 0,
-            dismissTicket = 3,
-        },
-        ['highway'] = {
-            issueTicket = 0,
-            checkMeters = 0,
-            bootVehicle = 1,
-            impoundVehicle = 1,
-            impoundCriminal = 0,
-            releaseImpound = 2,
-            viewTicketHistory = 0,
-            dismissTicket = 3,
-        },
-        ['ranger'] = {  -- Park Rangers
-            issueTicket = 1,
-            checkMeters = 1,
-            bootVehicle = 2,
-            impoundVehicle = 3,
-            impoundCriminal = 2,
-            releaseImpound = 4,
-            viewTicketHistory = 1,
-            dismissTicket = 5,
         },
     },
 

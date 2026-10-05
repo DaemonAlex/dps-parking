@@ -296,7 +296,7 @@ if Config.Impound and Config.Impound.policeKeybind then
     RegisterKeyMapping('impound_vehicle', 'Impound Vehicle', 'keyboard', Config.Impound.policeKeybind)
     RegisterCommand('impound_vehicle', function()
         local job = Bridge.GetJobName()
-        local authorizedJobs = { 'police', 'sheriff', 'highway', 'sasp', 'bcso' }
+        local authorizedJobs = { 'police', 'bcso', 'sasp', 'rpd', 'rcso' } -- DPS 2026-09-25: patrol set
 
         for _, j in ipairs(authorizedJobs) do
             if job == j then

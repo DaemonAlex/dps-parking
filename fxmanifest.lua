@@ -106,7 +106,7 @@ ui_page 'ui/index.html'
 
 files {
     'ui/index.html',
-    'ui/styles/main.css',
+    'ui/styles/main.css', 'ui/dps-look.css',
     'ui/js/utils.js',
     'ui/js/app.js',
     'ui/meters/index.html',
