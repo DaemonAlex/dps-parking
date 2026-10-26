@@ -39,8 +39,16 @@ function Billing.Detect()
         return Billing._script
     end
 
+    -- DPS 2026-10-12: wasabi_billing replaces qs-billing. Parking tickets are paid through
+    -- this resource's own ticket list (city hall / phone), so no invoice is sent: an invoice
+    -- on top would let a ticket be paid twice. wasabi_billing also answers to the
+    -- esx_billing and okokBilling names, so none of those branches may run while it is up.
+    -- (The old qs-billing call never worked: qs-billing has no CreateBillingForIdentifier.)
+    if GetResourceState('wasabi_billing') == 'started' then
+        return nil
+    end
+
     local scripts = {
-        'qs-billing',
         'qb-billing',
         'esx_billing',
         'okokBilling',

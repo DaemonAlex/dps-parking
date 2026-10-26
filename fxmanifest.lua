@@ -105,7 +105,7 @@ server_scripts {
 ui_page 'ui/index.html'
 
 files {
-    'ui/index.html',
+    'ui/index.html', 'ui/dps-logo.svg',
     'ui/styles/main.css', 'ui/dps-look.css',
     'ui/js/utils.js',
     'ui/js/app.js',
