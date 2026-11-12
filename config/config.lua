@@ -121,8 +121,6 @@ Config.Delivery = {
         ['police'] = 0.25,                    -- 25% off
         ['bcso'] = 0.25,                      -- DPS 2026-09-25: patrol set
         ['sasp'] = 0.25,
-        ['rpd'] = 0.25,
-        ['rcso'] = 0.25,
     }
 }
 
@@ -257,7 +255,7 @@ Config.Blips = {
 Config.NoParkingZones = {
     -- Job-restricted areas
     { coords = vector3(477.65, -1021.89, 27.39), radius = 20.0, jobs = {'police'}, name = 'MRPD Back Gate' },
-    { coords = vector3(291.27, -587.29, 42.55), radius = 15.0, jobs = {'sams', 'omc'}, name = 'Pillbox Hospital' }, -- DPS 2026-09-25: was vendor 'ambulance'
+    { coords = vector3(291.27, -587.29, 42.55), radius = 15.0, jobs = {'sams', 'lsmc'}, name = 'Pillbox Hospital' }, -- DPS 2026-09-25: was vendor 'ambulance'
     { coords = vector3(-333.02, -135.53, 38.37), radius = 15.0, jobs = {'mechanic'}, name = 'LS Customs 1' },
     { coords = vector3(731.73, -1088.91, 21.30), radius = 10.0, jobs = {'mechanic'}, name = 'LS Customs 2' },
     { coords = vector3(-212.25, -1325.47, 30.25), radius = 18.0, jobs = {'mechanic'}, name = 'Bennys' },

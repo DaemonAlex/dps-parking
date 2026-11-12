@@ -1,15 +1,354 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parking App</title>
-    <style>
-        /* Placeholder - Use your phone resource's UI framework */
-        body { background: transparent; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parking</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Condensed:wght@700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Kit B (DelPerroSands): navy panels with white outlines, cream text, orange only on the thing you press. No backdrop-filter (black square in NUI). Same page on the phone (one column) and the tablet (list left, detail right). */
+:root{--navy:#0f1a2e;--navy2:#0b1322;--panel:rgba(20,26,40,.82);--row:rgba(255,255,255,.07);--edge:rgba(255,255,255,.9);--edge2:rgba(255,255,255,.22);
+--ink:#f4f1ea;--ink2:#c9cfdd;--ink3:#8f99b5;--act:rgba(255,122,69,.85);--sun:#ff7a45;--ok:#4ec98a;--warn:#ffb347;--bad:#ff6b6b;
+--cond:"Roboto Condensed",Roboto,sans-serif;--mono:"Roboto Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;background:var(--navy);color:var(--ink);font:14px/1.45 Roboto,system-ui,sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+header{padding:44px 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--navy2);border-bottom:1px solid var(--edge2)}
+header .t{font:700 15px var(--cond);letter-spacing:.1em;text-transform:uppercase}
+header img{height:18px}
+.pill{font:700 11px var(--cond);letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px;border:1.5px solid var(--edge2);color:var(--ink2);white-space:nowrap}
+.pill.ok{color:var(--ok);border-color:var(--ok)} .pill.warn{color:var(--warn);border-color:var(--warn)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+#body{flex:1;min-height:0;display:flex;flex-direction:column}
+main{flex:1;min-height:0;overflow-y:auto;padding:12px 14px 20px;display:flex;flex-direction:column;gap:10px}
+nav{display:flex;border-top:1px solid var(--edge2);background:var(--navy2);padding:6px 4px 18px}
+nav button{flex:1;background:none;border:0;padding:8px 2px;font:700 11px var(--cond);letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);position:relative}
+nav button.on{color:var(--ink)}
+nav button.on::after{content:"";position:absolute;left:30%;right:30%;bottom:2px;height:3px;border-radius:3px;background:var(--sun)}
+nav .dot{display:inline-block;min-width:16px;padding:0 4px;margin-left:3px;border-radius:8px;background:var(--sun);color:#fff;font-size:10px;line-height:16px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sum div{border:1.5px solid var(--edge2);border-radius:12px;padding:8px 6px;text-align:center}
+.sum b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.sum span{font:700 10px var(--cond);letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)}
+.card{background:var(--panel);border:2px solid var(--edge);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.card.quiet{border-color:var(--edge2)}
+.card.pick{border-color:var(--sun)}
+h2{margin:0;font:700 15px var(--cond);letter-spacing:.06em;text-transform:uppercase}
+.lbl{font:700 11px var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.dim{color:var(--ink2)} .dim3{color:var(--ink3);font-size:12px}
+.mono{font:12px var(--mono);color:var(--ink2)}
+.plate{font:500 12px var(--mono);border:1px solid var(--edge2);border-radius:4px;padding:1px 6px;color:var(--ink2);white-space:nowrap}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.top b{font-size:15px}
+.meter{display:flex;flex-direction:column;gap:4px}
+.meter .l{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2)}
+.meter .l b{color:var(--ink);font-variant-numeric:tabular-nums}
+.bar{height:8px;border:1px solid var(--edge2);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink)}
+.bar i.low{background:var(--warn)} .bar i.out{background:var(--bad)}
+.btn{display:block;width:100%;padding:11px;border-radius:12px;border:2px solid var(--edge);background:var(--panel);color:#fff;font:700 13px var(--cond);letter-spacing:.07em;text-transform:uppercase;text-align:center}
+.btn.act{background:var(--act);border:3px solid #fff;font-size:14px;color:#fff}
+.btn.sm{padding:8px 10px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{flex:1;min-width:52px;padding:8px 0;text-align:center;border:1.5px solid var(--edge2);border-radius:10px;background:none;font:600 13px Roboto,sans-serif}
+.chip.on{background:var(--ink);color:#14161f;border-color:var(--ink)}
+.kv{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.kv div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--edge2);padding:4px 0}
+.kv div:last-child{border-bottom:0}
+.kv b{font-variant-numeric:tabular-nums}
+.kv .tot{font-size:15px}
+.input{width:100%;background:var(--row);border:1.5px solid var(--edge2);border-radius:10px;padding:9px;color:#fff}
+.input:focus{outline:2px solid var(--sun);outline-offset:0}
+textarea.input{min-height:70px;resize:vertical}
+.note{border-left:3px solid var(--sun);background:var(--row);border-radius:10px;padding:9px 11px;font-size:13px}
+.note.bad{border-left-color:var(--bad)} .note.ok{border-left-color:var(--ok)}
+.back{background:none;border:0;padding:0;font:700 12px var(--cond);letter-spacing:.07em;text-transform:uppercase;color:var(--ink2);align-self:flex-start}
+.sect{font:700 11px var(--cond);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding-top:4px}
+.item{display:flex;flex-direction:column;gap:3px;text-align:left;width:100%;background:var(--row);border:1.5px solid var(--edge2);border-radius:12px;padding:10px}
+.item.on{border-color:var(--sun)}
+.item b{font-size:14px}
+.hint{font-size:12px;color:var(--ink3)}
+button:focus-visible{outline:2px solid var(--sun);outline-offset:1px}
+/* tablet: list on the left, detail on the right */
+@media (min-width:640px){
+  header{padding-top:18px}
+  #body{flex-direction:row}
+  main{flex:1 1 60%;order:2}
+  nav{order:1;flex-direction:column;flex:0 0 150px;border-top:0;border-right:1px solid var(--edge2);padding:12px 8px;gap:4px}
+  nav button{flex:0 0 auto;text-align:left;padding:10px 10px;font-size:12px;border-radius:10px}
+  nav button.on{background:var(--row)}
+  nav button.on::after{display:none}
+  .wide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:start}
+  .wide>.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .sum{max-width:520px}
+}
+</style>
 </head>
 <body>
-    <!-- Phone App UI - Implement with your phone resource -->
+<header><span class="t">Parking</span><span class="row"><span class="pill" id="slots">…</span><img src="../dps-logo.svg" alt="DelPerroSands"></span></header>
+<div id="body">
+<main id="main"><div class="dim">Loading…</div></main>
+<nav id="nav">
+  <button data-tab="cars" class="on">My cars</button>
+  <button data-tab="meter">Meter</button>
+  <button data-tab="bring">Bring it</button>
+  <button data-tab="lots">Lots</button>
+  <button data-tab="tickets">Tickets<span class="dot" id="tdot" hidden></span></button>
+</nav>
+</div>
+<script>
+(function () {
+  'use strict';
+  var BASE = 'https://dps-parking/';
+  var S = { tab: 'cars', d: null, pick: null, minutes: 60, quote: null, rush: false, note: null, busy: false, view: null, reason: '', price: '', lot: null };
+  var $ = function (id) { return document.getElementById(id); };
+  function post(name, body) {
+    return fetch(BASE + name, { method: 'POST', headers: { 'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(body || {}) })
+      .then(function (r) { return r.json(); }).catch(function () { return null; });
+  }
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function money(n) { n = Math.round(Number(n) || 0); return '$' + n.toLocaleString('en-US'); }
+  function miles(m) { if (m == null) return ''; var mi = m / 1609.34; return mi < 0.1 ? 'right here' : (mi < 10 ? mi.toFixed(1) : Math.round(mi)) + ' mi away'; }
+  function clock(unix) { if (!unix) return ''; var d = new Date(unix * 1000); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function ago(unix) { if (!unix) return ''; var m = Math.round((S.d.now - unix) / 60); if (m < 1) return 'just now'; if (m < 60) return m + ' min ago'; if (m < 1440) return Math.round(m / 60) + ' h ago'; return Math.round(m / 1440) + ' d ago'; }
+  function left(sec) { if (sec <= 0) return 'run out'; var h = Math.floor(sec / 3600), m = Math.ceil((sec % 3600) / 60); return (h ? h + ' h ' : '') + m + ' min left'; }
+  function dur(min) { if (min >= 60) { var h = min / 60; return (h % 1 ? h.toFixed(1) : h) + ' h'; } return min + ' min'; }
+  function say(kind, text) { S.note = text ? { kind: kind, text: text } : null; }
+  function noteHtml() { return S.note ? '<div class="note ' + S.note.kind + '">' + esc(S.note.text) + '</div>' : ''; }
+  function car(plate) { var cs = (S.d && S.d.cars) || []; for (var i = 0; i < cs.length; i++) if (cs[i].plate === plate) return cs[i]; return null; }
+  function lotById(id) { var ls = (S.d && S.d.lots) || []; for (var i = 0; i < ls.length; i++) if (ls[i].id === id) return ls[i]; return null; }
+  function R() { return (S.d && S.d.rules) || {}; }
+
+  // ------------------------------------------------------------ pieces
+  function meterHtml(c) {
+    if (!c.meter) return '<div class="meter"><div class="l"><span>Meter</span><b>none running</b></div><div class="bar"><i style="width:0"></i></div></div>';
+    var sec = c.meter.expiresAt - S.d.now, pct = Math.max(0, Math.min(100, sec / (c.meter.minutes * 60) * 100));
+    var cls = sec <= 0 ? 'out' : (sec < 900 ? 'low' : '');
+    return '<div class="meter"><div class="l"><span>Meter</span><b>' + esc(left(sec)) + (sec > 0 ? ' · ' + clock(c.meter.expiresAt) : '') + '</b></div><div class="bar"><i class="' + cls + '" style="width:' + pct + '%"></i></div></div>';
+  }
+  function carCard(c, actions) {
+    var where = (c.lot ? c.lot.name : (c.street || 'Street parking')) + (c.distance != null ? ' · ' + miles(c.distance) : '');
+    return '<div class="card">' +
+      '<div class="top"><b>' + esc(c.label) + '</b><span class="plate">' + esc(c.plate) + '</span></div>' +
+      '<div class="dim3">' + esc(where) + (c.parkedAt ? ' · parked ' + esc(ago(c.parkedAt)) : '') + '</div>' +
+      meterHtml(c) + (actions || '') + '</div>';
+  }
+  function empty(text) { return '<div class="card quiet"><div class="dim">' + esc(text) + '</div></div>'; }
+
+  // ------------------------------------------------------------ tabs
+  function tabCars() {
+    var d = S.d, h = '';
+    h += '<div class="sum"><div><b>' + d.cars.length + '</b><span>parked</span></div><div><b>' + d.cars.filter(function (c) { return c.meter && c.meter.expiresAt > d.now; }).length + '</b><span>meters running</span></div><div><b>' + money(d.tickets.reduce(function (a, t) { return a + (t.status === 'unpaid' ? t.fine : 0); }, 0)) + '</b><span>owed</span></div></div>';
+    h += noteHtml();
+    if (!d.cars.length) h += empty('No cars parked right now. Park on the street or in a lot and it shows up here.');
+    d.cars.forEach(function (c) {
+      h += carCard(c, '<div class="row2"><button class="btn act sm" data-go="meter" data-plate="' + esc(c.plate) + '">Add time</button><button class="btn sm" data-find="' + esc(c.plate) + '">Find on map</button></div>');
+    });
+    if (d.impounded.length) {
+      h += '<div class="sect">Impounded</div>';
+      d.impounded.forEach(function (v) {
+        h += '<div class="card"><div class="top"><b>' + esc(v.label) + '</b><span class="pill bad">impound</span></div><div class="dim3">' + esc(v.reason || 'Impounded') + '</div><div class="kv"><div><span>Release fee</span><b>' + money(v.fee) + '</b></div>' + (v.discount ? '<div><span>Insurance</span><b>' + v.discount + '% off</b></div>' : '') + '</div><button class="btn act sm" data-go="tickets">Release · ' + money(v.fee) + '</button></div>';
+      });
+    }
+    var r = R();
+    h += '<div class="hint">' + (r.freeParking && r.freeParking.enabled ? 'Free parking ' + r.freeParking.startHour + ':00 to ' + r.freeParking.endHour + ':00. ' : '') + 'Meters cost ' + money(r.ratePerHour) + ' an hour; ' + r.graceMinutes + ' minutes\' grace after a meter runs out, towed ' + r.towAfterMinutes + ' minutes later.</div>';
+    return h;
+  }
+
+  function tabMeter() {
+    var d = S.d, h = noteHtml();
+    if (!d.cars.length) return h + empty('Nothing parked, so nothing to feed. Park first.');
+    if (!S.pick || !car(S.pick)) S.pick = d.cars[0].plate;
+    var c = car(S.pick);
+    if (d.cars.length > 1) {
+      h += '<div class="sect">Which car</div>';
+      d.cars.forEach(function (x) { h += '<button class="item' + (x.plate === S.pick ? ' on' : '') + '" data-pick="' + esc(x.plate) + '"><b>' + esc(x.label) + '</b><span class="dim3">' + esc(x.plate) + ' · ' + esc(x.lot ? x.lot.name : (x.street || '')) + '</span></button>'; });
+    }
+    h += carCard(c);
+    var r = R(), steps = [15, 30, 60, 120, 240, 480].filter(function (m) { return m >= r.minMinutes && m <= r.maxMinutes; });
+    h += '<div class="sect">How long</div><div class="chips">';
+    steps.forEach(function (m) { h += '<button class="chip' + (m === S.minutes ? ' on' : '') + '" data-min="' + m + '">' + esc(dur(m)) + '</button>'; });
+    h += '</div>';
+    var q = S.quote && S.quote.plate === S.pick && S.quote.minutes === S.minutes ? S.quote : null;
+    var cost = q ? q.cost : Math.ceil(S.minutes / 60 * r.ratePerHour);
+    var endsAt = (c.meter && c.meter.expiresAt > d.now ? c.meter.expiresAt : d.now) + S.minutes * 60;
+    h += '<div class="kv"><div><span>' + esc(dur(S.minutes)) + ' at ' + money(r.ratePerHour) + ' / h</span><b>' + money(cost) + '</b></div>' +
+      (d.isVip ? '<div><span>VIP</span><b>discount applied</b></div>' : '') +
+      '<div class="tot"><span><b>Total</b></span><b>' + money(cost) + '</b></div><div><span>Runs out</span><b>' + clock(endsAt) + '</b></div><div><span>Paid from</span><b>cash first, then bank · ' + money(d.money.cash) + ' / ' + money(d.money.bank) + '</b></div></div>';
+    h += '<button class="btn act" id="pay" ' + (S.busy ? 'disabled' : '') + '>Pay ' + money(cost) + '</button>';
+    h += '<div class="hint">Minimum ' + r.minMinutes + ' minutes, maximum ' + dur(r.maxMinutes) + ' in one go.' + (q ? '' : ' Exact price shows once the city answers.') + '</div>';
+    return h;
+  }
+
+  function deliveryQuote(rush) {
+    var dl = R().delivery || {}, cost = dl.baseCost || 500;
+    if (rush) cost = Math.ceil(cost * (dl.rushMultiplier || 2));
+    if (dl.discount > 0) cost = Math.ceil(cost * (1 - dl.discount));
+    if (dl.jobDiscount > 0) cost = Math.ceil(cost * (1 - dl.jobDiscount));
+    var t = rush ? (dl.rushTime || 2) : (dl.standardTime || 5);
+    t = Math.max(1, t - (dl.priorityMinutes || 0));
+    return { cost: cost, minutes: t };
+  }
+  function tabBring() {
+    var d = S.d, h = noteHtml(), dl = R().delivery || {};
+    if (d.cars.length) {
+      if (!S.pick || !car(S.pick)) S.pick = d.cars[0].plate;
+      var c = car(S.pick);
+      if (d.cars.length > 1) {
+        h += '<div class="sect">Which car</div>';
+        d.cars.forEach(function (x) { h += '<button class="item' + (x.plate === S.pick ? ' on' : '') + '" data-pick="' + esc(x.plate) + '"><b>' + esc(x.label) + '</b><span class="dim3">' + esc(x.plate) + ' · ' + esc(x.lot ? x.lot.name : (x.street || '')) + '</span></button>'; });
+      }
+      h += '<div class="card"><div class="top"><b>' + esc(c.label) + '</b><span class="plate">' + esc(c.plate) + '</span></div><div class="dim3">From ' + esc(c.lot ? c.lot.name : (c.street || 'where it is parked')) + ' to you' + (c.distance != null ? ' · ' + esc(miles(c.distance)) : '') + '</div></div>';
+      var std = deliveryQuote(false), rush = deliveryQuote(true);
+      h += '<div class="sect">Service</div>';
+      h += '<button class="item' + (!S.rush ? ' on' : '') + '" data-rush="0"><span class="top"><b>Standard</b><b>' + money(std.cost) + '</b></span><span class="dim3">about ' + std.minutes + ' minute' + (std.minutes === 1 ? '' : 's') + '</span></button>';
+      if (dl.rushAvailable) h += '<button class="item' + (S.rush ? ' on' : '') + '" data-rush="1"><span class="top"><b>Rush</b><b>' + money(rush.cost) + '</b></span><span class="dim3">about ' + rush.minutes + ' minute' + (rush.minutes === 1 ? '' : 's') + ' · ' + (dl.rushMultiplier || 2) + '× price</span></button>';
+      else h += '<div class="hint">Rush delivery needs a VIP parking membership.</div>';
+      var pick = S.rush ? rush : std;
+      h += '<div class="kv"><div><span>Deliveries this hour</span><b>' + (dl.maxPerHour > 0 ? 'up to ' + dl.maxPerHour : 'unlimited') + '</b></div><div><span>Paid from</span><b>bank first, then cash</b></div></div>';
+      h += '<button class="btn act" id="send" ' + (S.busy ? 'disabled' : '') + '>Send a driver · ' + money(pick.cost) + '</button>';
+    } else h += empty('Nothing parked, so nothing to bring. Park first.');
+    if (d.deliveries.length) {
+      h += '<div class="sect">On its way</div>';
+      d.deliveries.forEach(function (x) {
+        var cc = car(x.plate), sec = x.timeLeft || 0;
+        h += '<div class="card"><div class="top"><b>' + esc(cc ? cc.label : x.plate) + '</b><span class="pill ok">' + (sec > 0 ? Math.ceil(sec / 60) + ' min' : 'arriving') + '</span></div><div class="dim3">' + esc(x.plate) + (x.rush ? ' · rush' : '') + '</div><button class="btn sm" data-cancel="' + esc(x.id) + '" ' + (S.busy ? 'disabled' : '') + '>Cancel (75% back)</button></div>';
+      });
+    }
+    return h;
+  }
+
+  function tabLots() {
+    var d = S.d, h = noteHtml(), r = R();
+    var mine = d.lots.filter(function (l) { return l.mine; });
+    if (S.lot != null && !lotById(S.lot)) S.lot = null;
+    var sel = S.lot != null ? lotById(S.lot) : null;
+    var list = '';
+    d.lots.forEach(function (l) {
+      list += '<button class="item' + (sel && sel.id === l.id ? ' on' : '') + '" data-lot="' + l.id + '"><span class="top"><b>' + esc(l.name) + '</b><b>' + money(l.price) + '/h</b></span><span class="dim3">' + l.free + ' of ' + l.capacity + ' free' + (l.distance != null ? ' · ' + esc(miles(l.distance)) : '') + (l.mine ? ' · <span class="pill ok">yours</span>' : (l.forSale ? ' · for sale ' + money(l.purchasePrice) : '')) + '</span></button>';
+    });
+    var detail = '';
+    if (sel) {
+      var carsHere = d.cars.filter(function (c) { return c.lot && c.lot.id === sel.id; });
+      detail += '<div class="card"><div class="top"><b>' + esc(sel.name) + '</b><span class="pill">' + sel.capacity + ' spaces</span></div>' +
+        '<div class="kv"><div><span>Price per hour</span><b>' + money(sel.price) + '</b></div><div><span>Free now</span><b>' + sel.free + ' spaces</b></div><div><span>Your cars here</span><b>' + (carsHere.length ? esc(carsHere.map(function (c) { return c.label; }).join(', ')) : 'none') + '</b></div>' + (sel.forSale ? '<div><span>Lot for sale</span><b>' + money(sel.purchasePrice) + '</b></div>' : '') + '</div>' +
+        '<div class="row2"><button class="btn sm" data-findlot="' + sel.id + '">Find on map</button>' + (sel.forSale ? '<button class="btn act sm" data-buy="' + sel.id + '" ' + (S.busy ? 'disabled' : '') + '>Buy this lot</button>' : (carsHere.length ? '<button class="btn act sm" data-go="meter" data-plate="' + esc(carsHere[0].plate) + '">Add time</button>' : '<span></span>')) + '</div></div>';
+      if (sel.mine) {
+        var payout = Math.floor((sel.revenue || 0) * (1 - (r.tax || 0) / 100));
+        detail += '<div class="sect">Your lot</div><div class="card">' +
+          '<div class="kv"><div><span>Takings waiting</span><b>' + money(sel.revenue || 0) + '</b></div><div><span>After ' + (r.tax || 0) + '% city tax</span><b>' + money(payout) + '</b></div><div><span>Your cut per park</span><b>' + (r.ownerCut || 70) + '%</b></div></div>' +
+          '<button class="btn act sm" data-collect="' + sel.id + '" ' + (S.busy || !(sel.revenue > 0) ? 'disabled' : '') + '>Collect ' + money(payout) + '</button>' +
+          '<div class="sect">Price per hour</div><div class="row"><input class="input" id="price" type="number" inputmode="numeric" min="' + sel.minPrice + '" max="' + sel.maxPrice + '" value="' + esc(S.price !== '' ? S.price : sel.price) + '" style="flex:1"><button class="btn sm" id="setprice" style="width:auto" ' + (S.busy ? 'disabled' : '') + '>Set</button></div><div class="hint">Between ' + money(sel.minPrice) + ' and ' + money(sel.maxPrice) + '.</div>' +
+          '<div class="sect">Upgrades</div>';
+        (r.upgrades || []).forEach(function (u) {
+          var has = sel.upgrades && sel.upgrades[u.key];
+          detail += '<div class="top"><span>' + esc(u.description) + (has ? ' <span class="pill ok">installed</span>' : '') + '</span>' + (has ? '' : '<button class="btn sm" style="width:auto" data-up="' + esc(u.key) + '" data-lotid="' + sel.id + '" ' + (S.busy ? 'disabled' : '') + '>' + money(u.cost) + '</button>') + '</div>';
+        });
+        detail += '</div>';
+      }
+    } else detail += '<div class="card quiet"><div class="dim">Pick a lot to see prices, free spaces and your cars there.</div></div>';
+    if (mine.length) h += '<div class="hint">You own ' + mine.length + ' of ' + (r.maxLots || 3) + ' lots allowed.</div>';
+    return h + '<div class="wide"><div class="col">' + list + '</div><div class="col">' + detail + '</div></div>';
+  }
+
+  function tabTickets() {
+    var d = S.d, h = noteHtml();
+    if (S.view === 'contest' && S.ticket) {
+      return h + '<button class="back" id="back">‹ Back</button><div class="card"><h2>Dispute ticket</h2><div class="dim3">' + esc(S.ticket.type) + ' · ' + money(S.ticket.fine) + '</div><textarea class="input" id="reason" placeholder="Say what happened">' + esc(S.reason) + '</textarea><button class="btn act" id="sendcontest" ' + (S.busy ? 'disabled' : '') + '>Send to the Sheriff</button></div>';
+    }
+    if (d.impounded.length) {
+      h += '<div class="sect">Impounded</div>';
+      d.impounded.forEach(function (v) {
+        h += '<div class="card"><div class="top"><b>' + esc(v.label) + '</b><span class="pill bad">impound</span></div><div class="dim3">' + esc(v.plate) + ' · ' + esc(v.reason || 'Impounded') + (v.impoundedAt ? ' · ' + esc(ago(v.impoundedAt)) : '') + '</div><div class="kv"><div><span>Release fee</span><b>' + money(v.fee) + '</b></div>' + (v.discount ? '<div><span>Insurance covers</span><b>' + v.discount + '%</b></div>' : '') + '</div><button class="btn act sm" data-release="' + esc(v.plate) + '" ' + (S.busy ? 'disabled' : '') + '>Release · ' + money(v.fee) + '</button><div class="hint">Paid from bank first, then cash. The car goes back to your garage.</div></div>';
+      });
+    }
+    h += '<div class="sect">' + (d.tickets.length ? 'Unpaid tickets' : 'Tickets') + '</div>';
+    if (!d.tickets.length) h += empty('No tickets. Keep it that way.');
+    d.tickets.forEach(function (t) {
+      h += '<div class="card"><div class="top"><b>' + esc(t.type) + '</b><b>' + money(t.fine) + '</b></div><div class="dim3">' + esc(t.plate) + ' · ' + esc(ago(t.issuedAt)) + (t.isLate ? ' · <span class="pill warn">late fee</span>' : '') + (t.status === 'contested' ? ' · <span class="pill">disputed</span>' : '') + '</div>' +
+        (t.status === 'unpaid' ? '<div class="row2"><button class="btn act sm" data-payt="' + esc(t.id) + '" ' + (S.busy ? 'disabled' : '') + '>Pay</button><button class="btn sm" data-contest="' + esc(t.id) + '">Dispute</button></div>' : '<div class="hint">Waiting on the Sheriff\'s office.</div>') + '</div>';
+    });
+    return h;
+  }
+
+  // ------------------------------------------------------------ render + data
+  function render() {
+    var nav = $('nav'); Array.prototype.forEach.call(nav.querySelectorAll('button'), function (b) { b.classList.toggle('on', b.dataset.tab === S.tab); });
+    if (!S.d) { $('main').innerHTML = noteHtml() || '<div class="dim">Loading…</div>'; return; }
+    if (!S.d.ok) { $('main').innerHTML = '<div class="note bad">' + esc(S.d.message || 'No answer from the city.') + '</div><button class="btn" id="retry">Try again</button>'; return; }
+    $('slots').textContent = S.d.slots.used + ' / ' + S.d.slots.max + ' spots' + (S.d.isVip ? ' · VIP' : '');
+    var unpaid = S.d.tickets.filter(function (t) { return t.status === 'unpaid'; }).length + S.d.impounded.length;
+    $('tdot').hidden = !unpaid; $('tdot').textContent = unpaid;
+    $('main').innerHTML = ({ cars: tabCars, meter: tabMeter, bring: tabBring, lots: tabLots, tickets: tabTickets })[S.tab]();
+    if (S.tab === 'meter') quote();
+  }
+  var quoting = null;
+  function quote() {
+    if (!S.pick) return;
+    var key = S.pick + ':' + S.minutes;
+    if (S.quote && S.quote.key === key) return;
+    if (quoting === key) return;
+    quoting = key;
+    post('appQuoteMeter', { plate: S.pick, minutes: S.minutes }).then(function (r) {
+      quoting = null;
+      if (r && r.ok) { S.quote = { key: key, plate: S.pick, minutes: S.minutes, cost: r.cost }; if (S.tab === 'meter') render(); }
+    });
+  }
+  function refresh() {
+    return post('appSummary').then(function (r) { S.d = r || { ok: false, message: 'No answer from the city. Try again in a moment.' }; S.d.now = S.d.now || Math.floor(Date.now() / 1000); render(); });
+  }
+  function act(name, body, okText) {
+    if (S.busy) return;
+    S.busy = true; render();
+    return post(name, body).then(function (r) {
+      S.busy = false;
+      if (r && r.ok) say('ok', okText || r.message || 'Done'); else say('bad', (r && r.message) || 'That did not go through.');
+      S.quote = null;
+      return refresh();
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var ds = b.dataset;
+    if (ds.tab) { S.tab = ds.tab; S.view = null; say(); render(); return; }
+    if (ds.go) { S.tab = ds.go; if (ds.plate) S.pick = ds.plate; S.view = null; say(); render(); return; }
+    if (ds.pick) { S.pick = ds.pick; S.quote = null; render(); return; }
+    if (ds.min) { S.minutes = +ds.min; render(); return; }
+    if (ds.rush != null) { S.rush = ds.rush === '1'; render(); return; }
+    if (ds.lot) { S.lot = +ds.lot; S.price = ''; say(); render(); return; }
+    if (ds.find) { var c = car(ds.find); if (c && c.location) post('appFind', { x: c.location.x, y: c.location.y }).then(function (r) { say(r && r.ok ? 'ok' : 'bad', (r && r.message) || 'No position'); render(); }); return; }
+    if (ds.findlot) { var l = lotById(+ds.findlot); if (l && l.coords) post('appFind', { x: l.coords.x, y: l.coords.y }).then(function (r) { say(r && r.ok ? 'ok' : 'bad', (r && r.message) || 'No position'); render(); }); return; }
+    if (b.id === 'pay') { act('appPayMeter', { plate: S.pick, minutes: S.minutes }); return; }
+    if (b.id === 'send') { act('appBring', { plate: S.pick, rush: S.rush }); return; }
+    if (ds.cancel) { act('appCancelDelivery', { id: ds.cancel }); return; }
+    if (ds.payt) { act('appPayTicket', { id: ds.payt }); return; }
+    if (ds.contest) { S.ticket = S.d.tickets.filter(function (t) { return t.id === ds.contest; })[0]; S.view = 'contest'; S.reason = ''; render(); return; }
+    if (b.id === 'back') { S.view = null; render(); return; }
+    if (b.id === 'sendcontest') { S.reason = ($('reason') || {}).value || ''; if (!S.reason.trim()) { say('bad', 'Say what happened first.'); render(); return; } var id = S.ticket.id; S.view = null; act('appContestTicket', { id: id, reason: S.reason }); return; }
+    if (ds.release) { act('appRelease', { plate: ds.release }); return; }
+    if (ds.buy) { act('appBuyLot', { lotId: +ds.buy }); return; }
+    if (ds.collect) { act('appCollect', { lotId: +ds.collect }); return; }
+    if (b.id === 'setprice') { S.price = ($('price') || {}).value || ''; act('appSetPrice', { lotId: S.lot, price: +S.price }).then(function () { S.price = ''; }); return; }
+    if (ds.up) { act('appUpgrade', { lotId: +ds.lotid, key: ds.up }); return; }
+    if (b.id === 'retry') { S.d = null; render(); refresh(); return; }
+  });
+  document.addEventListener('input', function (e) { if (e.target.id === 'price') S.price = e.target.value; if (e.target.id === 'reason') S.reason = e.target.value; });
+
+  window.addEventListener('message', function (e) {
+    var d = e.data || {}; var action = typeof d === 'string' ? d : d.action;
+    if (action === 'reset') { S = { tab: 'cars', d: null, pick: null, minutes: 60, quote: null, rush: false, note: null, busy: false, view: null, reason: '', price: '', lot: null }; render(); refresh(); }
+    else if (action === 'refresh') { if (!S.busy) refresh(); }
+  });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
+  setInterval(function () { if (document.hidden || S.busy || S.view) return; refresh(); }, 30000);
+  render(); refresh();
+})();
+</script>
 </body>
 </html>

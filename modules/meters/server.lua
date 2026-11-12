@@ -12,28 +12,13 @@ Meters = {}
 -- METER OPERATIONS
 -- ============================================
 
----Pay for parking meter
----@param source number
+---Price a meter without charging (DPS 2026-10-26: the Parking app shows this before you pay)
+---@param citizenid string
 ---@param plate string
 ---@param minutes number
----@return boolean success
----@return string message
-function Meters.Pay(source, plate, minutes)
-    if not Config.Meters.enabled then
-        return false, 'Meters disabled'
-    end
-
-    local citizenid = Bridge.GetCitizenId(source)
-    if not citizenid then
-        return false, L('error')
-    end
-
-    -- M2: only the vehicle owner may pay its meter
-    plate = Utils.FormatPlate(plate)
-    if not Bridge.DB.PlayerOwnsVehicle(citizenid, plate) then
-        return false, L('not_owner')
-    end
-
+---@return number cost
+---@return number minutes clamped to the allowed range
+function Meters.Quote(citizenid, plate, minutes)
     -- Validate time
     if minutes < Config.Meters.minimumMinutes then
         minutes = Config.Meters.minimumMinutes
@@ -75,6 +60,35 @@ function Meters.Pay(source, plate, minutes)
     if State.IsVip(citizenid) and Config.VIP.perks.freeMeters then
         cost = 0
     end
+
+    return cost, minutes
+end
+
+---Pay for parking meter
+---@param source number
+---@param plate string
+---@param minutes number
+---@return boolean success
+---@return string message
+function Meters.Pay(source, plate, minutes)
+    if not Config.Meters.enabled then
+        return false, 'Meters disabled'
+    end
+
+    local citizenid = Bridge.GetCitizenId(source)
+    if not citizenid then
+        return false, L('error')
+    end
+
+    -- M2: only the vehicle owner may pay its meter
+    plate = Utils.FormatPlate(plate)
+    if not Bridge.DB.PlayerOwnsVehicle(citizenid, plate) then
+        return false, L('not_owner')
+    end
+
+    -- Price it (DPS 2026-10-26: shared with the Parking app's quote)
+    local cost
+    cost, minutes = Meters.Quote(citizenid, plate, minutes)
 
     -- Charge player
     if cost > 0 then

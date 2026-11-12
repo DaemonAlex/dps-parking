@@ -18,7 +18,7 @@ Parking system for Qbox servers: parked cars, meters, tickets, impound, valet, d
 - Delivery: have your parked car delivered to you. Rush option, VIP tiers, NPC driver for higher tiers, job discounts.
 - Reserved spots: VIP, job, business and rental spots.
 - Dispatch alerts to police for expired meters and zone violations.
-- Phone app for your parked cars (lb-phone).
+- Parking app on the phone (lb-phone): see where your cars are, price and pay a meter, have a car delivered, pay or contest a ticket, get a car out of the impound, and run a lot you own (buy it, set its price, collect earnings, buy upgrades).
 - Discord audit log (optional).
 - Pre-hooks and post-hooks plus exports for other resources.
 
@@ -136,6 +136,40 @@ exports['dps-parking']:RegisterPostHook('parking:park', function(data) end)
 ```
 
 The parking module runs the hooks `parking:park` and `parking:unpark`. The events `parking:impounded` and `meters:expired` are published on the EventBus.
+
+## What it is for
+
+On most servers a car is either in a garage or gone. This makes where you leave it matter. Cars
+stay parked in the world, meters run out, tickets are written, and a car left too long is towed.
+Parking becomes something players and police both deal with, and something a player can own a
+business in.
+
+## On its own, and with other scripts
+
+**On its own.** With Qbox, `ox_lib` and `oxmysql`: persistent parked cars, meters, tickets,
+timed parking, lots, reserved spots and impound fees. Fees are charged directly.
+
+**It detects what you run.** Garages, insurance, dispatch, billing, banking, phone and fuel
+scripts are each found automatically, paid or free, and used only if started. You do not set
+which one you have, and you can swap one for another later without touching this resource.
+
+**With a paid garage script (jg-advancedgarages, qs-advancedgarages, cd_garage).** A parked,
+towed or impounded car shows the right state in the garage, so a car cannot be in two places.
+
+**With a paid dispatch or police computer (wasabi_mdt, qs-dispatch, ps-dispatch and others).**
+Expired meters and no-parking violations reach the police as calls.
+
+**With a paid phone (lb-phone).** Players get an app listing where their cars are parked.
+
+**With insurance ([dps-insurance](https://github.com/DaemonAlex/dps-insurance) or a paid one).**
+Insured owners pay less to get a car out of the impound.
+
+**With [dps-vehiclepersistence](https://github.com/DaemonAlex/dps-vehiclepersistence).** The two
+are made to run together: persistence keeps unparked cars where they were left, parking handles
+the ones deliberately parked.
+
+**With [dps-towjob](https://github.com/DaemonAlex/dps-towjob).** Cars this resource flags for
+towing give tow drivers real work.
 
 ## Prerequisites
 
@@ -263,7 +297,7 @@ All options are in `config/config.lua`. Values below are the defaults.
 | `cooldownMinutes` | `10` | Not read by the code. |
 | `discounts` | see below | Discount by job name. |
 
-Default discounts: `mechanic` 0.50, `police` 0.25, `bcso` 0.25, `sasp` 0.25, `rpd` 0.25, `rcso` 0.25.
+Default discounts: `mechanic` 0.50, `police` 0.25, `bcso` 0.25, `sasp` 0.25.
 
 ### Config.Business
 
@@ -328,7 +362,7 @@ Each entry has `sprite`, `color` and `scale`.
 
 A list of `{ coords, radius, jobs, name }`. `jobs` is a list of job names that may park there, or `nil` for a zone nobody may use. Defaults:
 
-- MRPD Back Gate (police), Pillbox Hospital (`sams`, `omc`), LS Customs 1, LS Customs 2, Bennys, Mechanic Shop (all `mechanic`).
+- MRPD Back Gate (police), Pillbox Hospital (`sams`, `lsmc`), LS Customs 1, LS Customs 2, Bennys, Mechanic Shop (all `mechanic`).
 - Impound, Jewelry Store, Airport Runway (`jobs = nil`).
 
 ### Config.ParkingLots
@@ -433,8 +467,6 @@ Jobs in the file:
 | Job | issueTicket | checkMeters | bootVehicle | impoundVehicle | impoundCriminal | releaseImpound | viewTicketHistory | dismissTicket |
 |---|---|---|---|---|---|---|---|---|
 | `police` | 1 | 1 | 2 | 3 | 2 | 4 | 1 | 5 |
-| `rpd` | 1 | 1 | 2 | 3 | 2 | 4 | 1 | 5 |
-| `rcso` | 1 | 1 | 2 | 3 | 2 | 4 | 1 | 5 |
 | `bcso` | 1 | 1 | 2 | 3 | 2 | 4 | 1 | 5 |
 | `sasp` | 1 | 1 | 2 | 2 | 1 | 3 | 1 | 4 |
 
@@ -464,3 +496,38 @@ To add a job, copy one block, rename the key to your job and set the grades. The
 - **No phone app.** `Config.Integration.phoneEnabled` is false, or `lb-phone` was not started. The app registers about five seconds after start.
 - **Floating text is not shown.** Check `display3DText`, `streamerMode` and `displayDistance`.
 - **Setting a config option has no effect.** The option may be one marked "Not read by the code" in this guide.
+
+## Recent changes
+
+- **12 November 2026.** README: what it is for, how it works alone and with paid scripts, other DPS scripts.
+- **26 October 2026. The Parking app.** A full app page for lb-phone, with its own icon on the home screen. It covers parked cars, meters, delivery, tickets, impound and lot ownership. A meter now shows its price before you pay. A lot owner can set the lot's price from the app. All money and ownership rules stay in the existing modules. The app only reads and forwards.
+- **31 October 2026.** Roxwood departments removed from job discounts and ticket permissions. The hospital reserved spots are for `sams` and `lsmc`.
+- **25 September 2026.** Police permissions cover the patrol jobs that exist here: `police`, `bcso` and `sasp`.
+
+## Other DPS scripts
+
+All of these are made for DelPerroSands and run together on one Qbox server. Each one works on
+its own. The ones marked "pairs with" do more when both are running.
+
+| Script | What it does |
+|---|---|
+| [dps-inventory](https://github.com/DaemonAlex/dps-inventory) | The inventory: ox_inventory with equipment slots, backpacks, armour plates and a self status panel, in the DelPerroSands colours. |
+| [dps-medical](https://github.com/DaemonAlex/dps-medical) | Patient records, illness and diagnostic tests. A companion to wasabi_ambulance. Pairs with dps-inventory: symptoms and diagnoses show on the status panel. |
+| [dps-insurance](https://github.com/DaemonAlex/dps-insurance) | Ties m-Insurance into the MDT, impound, hospital and medical chart. Pairs with dps-medical. |
+| [dps-studio](https://github.com/DaemonAlex/dps-studio) | Build rooms, doors and portals in game from one panel (`/studio`), with owners and managers so staff do not have to support them. |
+| [dps-shops](https://github.com/DaemonAlex/dps-shops) | Shop clerks who greet and react to a robbery, then player-owned shops. |
+| [dps-fleet](https://github.com/DaemonAlex/dps-fleet) | Vehicle browser and workshop on one panel: extras, liveries and mods for emergency vehicles. |
+| [dps-vehiclepersistence](https://github.com/DaemonAlex/dps-vehiclepersistence) | Vehicles stay where they were parked. Pairs with dps-parking. |
+| [dps-towjob](https://github.com/DaemonAlex/dps-towjob) | Queue-based tow job with jg-mechanic integration. |
+| [dps-services](https://github.com/DaemonAlex/dps-services) | Request a tow and follow it live on the lb-phone and lb-tablet. Pairs with dps-towjob. |
+| [dps-autoshops](https://github.com/DaemonAlex/dps-autoshops) | Self-service repair shops when no mechanic is on duty. |
+| [dps-cityworker](https://github.com/DaemonAlex/dps-cityworker) | City infrastructure job and career. |
+| [dps-ainpcs](https://github.com/DaemonAlex/dps-ainpcs) | NPCs you can talk to, with trust, quests and intel. |
+| [dps-badpeds](https://github.com/DaemonAlex/dps-badpeds) | Police interaction with NPCs: stops, arrests, intel and jail records. |
+| [dps-gangwars](https://github.com/DaemonAlex/dps-gangwars) | Ambient gang NPCs, territory population and war reinforcements. |
+| [dps-rotations](https://github.com/DaemonAlex/dps-rotations) | Moves dealers, harvests and other spots on a fixed schedule. |
+| [dps-trains](https://github.com/DaemonAlex/dps-trains) | The train system. Pairs with dps-trains-stock, dps-traintools and dps-transitapp. |
+| [dps-transitapp](https://github.com/DaemonAlex/dps-transitapp) | Live train arrival boards on the lb-phone. |
+| [dps-faceplant](https://github.com/DaemonAlex/dps-faceplant) | City help, reports and staff tools on the lb-phone and lb-tablet. |
+| [dps-chat](https://github.com/DaemonAlex/dps-chat) | A command box for voice-only servers. No chat feed. |
+| [dps-filmmode](https://github.com/DaemonAlex/dps-filmmode) | One key hides every HUD layer and gives a smooth free camera for recording. |

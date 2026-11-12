@@ -61,6 +61,7 @@ client_scripts {
 
     -- Integrations (client-only: phone app registration)
     'integrations/phone_client.lua',
+    'integrations/app_client.lua',   -- DPS 2026-10-26: Parking app page callbacks
 }
 
 -- Server scripts
@@ -80,6 +81,7 @@ server_scripts {
     'integrations/dispatch.lua',
     'integrations/billing.lua',
     'integrations/phone.lua',
+    'integrations/app_server.lua',   -- DPS 2026-10-26: Parking app (loads after the modules it calls)
 
     -- Modules
     'modules/zones/server.lua',
@@ -111,6 +113,7 @@ files {
     'ui/js/app.js',
     'ui/meters/index.html',
     'ui/phone/index.html',
+    'ui/parking-icon.png',
 }
 
 -- Exports (for other resources)
