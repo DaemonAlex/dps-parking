@@ -42,26 +42,6 @@ Permissions.Config = {
             dismissTicket = 5,      -- Captain+ can dismiss
         },
         -- DPS 2026-09-25: lspd/sheriff/sahp/highway/ranger removed (not jobs here); rpd/rcso added
-        ['rpd'] = {  -- Roxwood Police Department
-            issueTicket = 1,
-            checkMeters = 1,
-            bootVehicle = 2,
-            impoundVehicle = 3,
-            impoundCriminal = 2,
-            releaseImpound = 4,
-            viewTicketHistory = 1,
-            dismissTicket = 5,
-        },
-        ['rcso'] = {  -- Roxwood County Sheriff's Office
-            issueTicket = 1,
-            checkMeters = 1,
-            bootVehicle = 2,
-            impoundVehicle = 3,
-            impoundCriminal = 2,
-            releaseImpound = 4,
-            viewTicketHistory = 1,
-            dismissTicket = 5,
-        },
         ['bcso'] = {  -- Blaine County Sheriff
             issueTicket = 1,
             checkMeters = 1,

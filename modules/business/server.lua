@@ -122,6 +122,9 @@ EventBus.RegisterPostHook('parking:park', function(data)
     if not owner then return end
 
     local fee = data.lot.basePrice or Config.Parking.parkingFee
+    -- DPS 2026-10-26: the owner can set the lot's price from the Parking app
+    local setPrice = owner.settings and tonumber(owner.settings.price)
+    if setPrice and setPrice > 0 then fee = math.floor(setPrice) end
     local ownerCut = math.floor(fee * (Config.Business.ownerRevenuePercent / 100))
 
     owner.revenue = (owner.revenue or 0) + ownerCut
