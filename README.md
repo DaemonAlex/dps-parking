@@ -504,6 +504,10 @@ To add a job, copy one block, rename the key to your job and set the grades. The
 - **31 October 2026.** Roxwood departments removed from job discounts and ticket permissions. The hospital reserved spots are for `sams` and `lsmc`.
 - **25 September 2026.** Police permissions cover the patrol jobs that exist here: `police`, `bcso` and `sasp`.
 
+## Author
+
+Made by [DaemonAlex](https://github.com/DaemonAlex) for DelPerroSands.
+
 ## Other DPS scripts
 
 All of these are made for DelPerroSands and run together on one Qbox server. Each one works on
