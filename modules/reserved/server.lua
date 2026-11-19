@@ -252,6 +252,8 @@ function Reserved.RentSpot(source, spotId, hours)
     end
 
     local citizenid = Bridge.GetCitizenId(source)
+    hours = math.floor(tonumber(hours) or 0)
+    if hours < 1 then return false, 'Rent for at least one hour' end
     hours = math.min(hours, Reserved.Config.maxRentalHours)
 
     -- Calculate price
@@ -272,11 +274,13 @@ function Reserved.RentSpot(source, spotId, hours)
     end
 
     -- Charge
+    local paid
     if Bridge.GetMoney(source, 'bank') >= price then
-        Bridge.RemoveMoney(source, 'bank', price, 'Parking spot rental')
+        paid = Bridge.RemoveMoney(source, 'bank', price, 'Parking spot rental')
     else
-        Bridge.RemoveMoney(source, 'cash', price, 'Parking spot rental')
+        paid = Bridge.RemoveMoney(source, 'cash', price, 'Parking spot rental')
     end
+    if paid == false then return false, L('insufficient_funds', Utils.FormatMoney(price)) end
 
     -- Set rental
     spot.rentedBy = citizenid

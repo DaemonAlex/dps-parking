@@ -10,6 +10,9 @@
     - Retrieval spawning
 ]]
 
+-- DPS 2026-11-19: switched off in the config until it is rebuilt.
+if not (Config.Valet and Config.Valet.enabled) then return end
+
 local AddValetTarget -- forward declaration: defined below, called from SpawnValetPed
 local valetPeds = {}
 local valetBlips = {}

@@ -499,8 +499,22 @@ To add a job, copy one block, rename the key to your job and set the grades. The
 - **Floating text is not shown.** Check `display3DText`, `streamerMode` and `displayDistance`.
 - **Setting a config option has no effect.** The option may be one marked "Not read by the code" in this guide.
 
+## Switched off
+
+These parts are off in `config/config.lua` (`enabled = false`) until they are rebuilt. Each one let a player duplicate cars or make money from nothing.
+
+| Part | Why it is off |
+|---|---|
+| Valet (`Config.Valet`) | Asking for the same car twice gave two cars. |
+| Delivery (`Config.Delivery`) | Two deliveries of one car gave two cars. |
+| Lot ownership (`Config.Business`) | An owner was paid each time a car was parked in the lot, and parking was free. |
+| Parking impound (`Config.Impound`) | It took the fee and gave no car. Impound is done through the garage script. |
+
+The phone app still lists these sections; their buttons answer that the part is switched off.
+
 ## Recent changes
 
+- **19 November 2026 (2.3.0). One owner per car.** The garage script decides where a car is. A car it has stored or impounded cannot hold a street spot: it is not parked, not spawned at start, and a parked car loses its spot within 30 seconds of being stored. The server now finds the car itself when you park (real vehicle, your plate, you next to it) and takes the position from the car, not from the client. A car left too long, or on an expired meter, is towed back to its garage with no made-up bill. An expired meter writes one ticket, not one a minute. The menus that asked the server a question work again (the callbacks were broken under ox_lib). Parked cars spawn at server start, and keep their real parked time across restarts. Valet, delivery, lot ownership and the parking impound are switched off: see "Switched off" below. Removed: the open lock event and the old mh-parking server events.
 - **12 November 2026.** README: what it is for, how it works alone and with paid scripts, other DPS scripts.
 - **26 October 2026. The Parking app.** A full app page for lb-phone, with its own icon on the home screen. It covers parked cars, meters, delivery, tickets, impound and lot ownership. A meter now shows its price before you pay. A lot owner can set the lot's price from the app. All money and ownership rules stay in the existing modules. The app only reads and forwards.
 - **31 October 2026.** Roxwood departments removed from job discounts and ticket permissions. The hospital reserved spots are for `sams` and `lsmc`.

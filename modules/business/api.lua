@@ -4,6 +4,9 @@
     Enhanced: DPS Development
 ]]
 
+-- DPS 2026-11-19: switched off in the config until it is rebuilt.
+if not (Config.Business and Config.Business.enabled) then return end
+
 exports('GetLotOwner', function(lotId)
     return State.GetBusinessOwner(lotId)
 end)

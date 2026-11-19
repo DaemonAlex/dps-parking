@@ -21,11 +21,13 @@ local function DrawReservedMarkers()
     if not Config.Reserved or not Config.Reserved.spots then return end
 
     local playerCoords = GetEntityCoords(PlayerPedId())
+    local drew = false
 
     for _, spot in ipairs(Config.Reserved.spots) do
         local dist = #(playerCoords - vector3(spot.coords.x, spot.coords.y, spot.coords.z))
 
         if dist < 50.0 then
+            drew = true
             -- Draw marker
             local color = { r = 255, g = 255, b = 0, a = 100 }  -- Yellow default
 
@@ -56,6 +58,8 @@ local function DrawReservedMarkers()
             end
         end
     end
+
+    return drew
 end
 
 -- ============================================
@@ -216,9 +220,9 @@ CreateThread(function()
         return
     end
 
+    -- Every frame only while a marker is in view; once a second otherwise.
     while true do
-        DrawReservedMarkers()
-        Wait(0)
+        Wait(DrawReservedMarkers() and 0 or 1000)
     end
 end)
 

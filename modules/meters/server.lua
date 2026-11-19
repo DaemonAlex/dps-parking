@@ -139,8 +139,11 @@ local function CheckExpiredMeters()
         local gracePeriod = Config.Meters.graceMinutes * 60
         local expiredTime = now - meterData.expiresAt
 
-        -- Check if past grace period
-        if expiredTime > gracePeriod then
+        local stillParked = State.GetParkedVehicle(plate)
+        if not stillParked then
+            -- The car has left (driven off, stored, towed): nothing to ticket, the meter is over.
+            State.RemoveActiveMeter(plate)
+        elseif expiredTime > gracePeriod then
             -- Issue ticket
             local ticketAmount = Config.Meters.ticketAmount
 
@@ -149,33 +152,29 @@ local function CheckExpiredMeters()
             -- H4: publish 'meters:expired' (was 'meters:ticketIssued') - this is the
             -- name that violations (auto-ticket), dispatch (alert) and audit all listen for.
             -- Include location/street so dispatch can place the alert.
-            local parkedVehicle = State.GetParkedVehicle(plate)
+            local parkedVehicle = stillParked
             local loc = parkedVehicle and parkedVehicle.location
-            EventBus.Publish('meters:expired', {
-                plate = plate,
-                citizenid = meterData.citizenid,
-                amount = ticketAmount,
-                location = loc and vector3(loc.x, loc.y, loc.z) or nil,
-                street = parkedVehicle and parkedVehicle.street or nil,
-            })
+            -- Once per expiry. This loop runs every minute, and it used to write a new ticket each time.
+            if not meterData.ticketed then
+                meterData.ticketed = true
+                EventBus.Publish('meters:expired', {
+                    plate = plate,
+                    citizenid = meterData.citizenid,
+                    amount = ticketAmount,
+                    location = loc and vector3(loc.x, loc.y, loc.z) or nil,
+                    street = parkedVehicle and parkedVehicle.street or nil,
+                })
+            end
 
             -- Check if should tow
             local towTime = Config.Meters.towAfterMinutes * 60
             if expiredTime > towTime then
                 Utils.Debug(('Towing vehicle %s for expired meter'):format(plate))
 
-                if parkedVehicle then
-                    Bridge.PoliceImpound(plate, true, ticketAmount,
-                        parkedVehicle.body, parkedVehicle.engine, parkedVehicle.fuel)
-
-                    if parkedVehicle.entity and DoesEntityExist(parkedVehicle.entity) then
-                        DeleteEntity(parkedVehicle.entity)
-                    end
-
-                    State.RemoveParkedVehicle(plate)
-                    State.RemoveActiveMeter(plate)
-
-                    TriggerClientEvent('dps-parking:client:vehicleImpounded', -1, { plate = plate })
+                if parkedVehicle and Config.Meters.towExpired ~= false then
+                    -- Towed back to its garage; the ticket is the cost.
+                    Bridge.DB.TowToGarage(plate, parkedVehicle.body, parkedVehicle.engine, parkedVehicle.fuel)
+                    Parking.GiveUpSpot(plate, 'meter')
                 end
             end
         end

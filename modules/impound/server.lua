@@ -10,6 +10,12 @@
     - Retrieval locations
 ]]
 
+-- DPS 2026-11-19: switched off in the config until it is rebuilt (see README, "Switched off").
+if not (Config.Impound and Config.Impound.enabled) then
+    Impound = Utils.SwitchedOff('The parking impound')
+    return
+end
+
 Impound = {}
 
 -- Track impounded vehicles (in-memory, synced with garage script)
