@@ -261,6 +261,7 @@ end)
 
 local function myLot(source, lotId)
     local citizenid = Bridge.GetCitizenId(source)
+    if Business.off then return nil, nil, nil, 'Lot ownership is switched off' end
     lotId = tonumber(lotId)
     local lot = lotId and Zones.GetParkingLot(lotId)
     if not citizenid or not lot then return nil, nil, nil, 'Lot not found' end

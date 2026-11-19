@@ -9,6 +9,9 @@
     - Police impound actions
 ]]
 
+-- DPS 2026-11-19: switched off in the config until it is rebuilt.
+if not (Config.Impound and Config.Impound.enabled) then return end
+
 local impoundPeds = {}
 local impoundBlips = {}
 

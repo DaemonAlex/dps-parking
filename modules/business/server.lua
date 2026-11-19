@@ -6,6 +6,12 @@
     Parking lot ownership and business management.
 ]]
 
+-- DPS 2026-11-19: switched off in the config until it is rebuilt (see README, "Switched off").
+if not (Config.Business and Config.Business.enabled) then
+    Business = Utils.SwitchedOff('Lot ownership')
+    return
+end
+
 Business = {}
 
 -- ============================================

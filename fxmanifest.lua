@@ -24,7 +24,7 @@ lua54 'yes'
 name 'dps-parking'
 author 'DPS Development (Original: MaDHouSe79)'
 description 'Advanced Parking System with Valet, Impound, Violations, Reserved Spots & More'
-version '2.2.0'
+version '2.3.0'
 
 -- Dependencies
 dependencies {

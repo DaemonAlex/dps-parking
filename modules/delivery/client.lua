@@ -9,6 +9,9 @@
     - Street-safe spawn verification
 ]]
 
+-- DPS 2026-11-19: switched off in the config until it is rebuilt.
+if not (Config.Delivery and Config.Delivery.enabled) then return end
+
 local activeDeliveryBlips = {}
 
 -- NPC Driver models (variety for immersion)

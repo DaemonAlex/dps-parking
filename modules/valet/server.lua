@@ -10,6 +10,12 @@
     - Integration with parking StateManager
 ]]
 
+-- DPS 2026-11-19: switched off in the config until it is rebuilt (see README, "Switched off").
+if not (Config.Valet and Config.Valet.enabled) then
+    Valet = Utils.SwitchedOff('Valet parking')
+    return
+end
+
 Valet = {}
 
 -- Active valet sessions

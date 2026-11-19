@@ -10,6 +10,12 @@
     - Optional NPC driver immersion
 ]]
 
+-- DPS 2026-11-19: switched off in the config until it is rebuilt (see README, "Switched off").
+if not (Config.Delivery and Config.Delivery.enabled) then
+    Delivery = Utils.SwitchedOff('Vehicle delivery')
+    return
+end
+
 Delivery = {}
 
 local playerDeliveryCount = {}

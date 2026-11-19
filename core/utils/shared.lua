@@ -358,4 +358,11 @@ function Utils.DebugTable(t, name)
     end
 end
 
+---A stand-in for a module that is switched off in the config: every call answers false and says so.
+---@param label string
+function Utils.SwitchedOff(label)
+    local msg = label .. ' is switched off'
+    return setmetatable({ off = true }, { __index = function() return function() return false, msg end end })
+end
+
 return Utils

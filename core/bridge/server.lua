@@ -272,7 +272,18 @@ function Bridge.CreateCallback(name, cb)
     -- unconditionally when present. Use the `lib` global directly so this never
     -- depends on Bridge.Resources/Bridge.Core being populated yet at registration time.
     if lib and lib.callback then
-        lib.callback.register(name, cb)
+        -- The handlers here are written (source, cb, ...). ox_lib wants a returned value, so give each
+        -- handler a cb that resolves a promise and return what it was called with.
+        lib.callback.register(name, function(source, ...)
+            local p, done = promise.new(), false
+            cb(source, function(...)
+                if done then return end
+                done = true
+                p:resolve(table.pack(...))
+            end, ...)
+            local r = Citizen.Await(p)
+            return table.unpack(r, 1, r.n)
+        end)
     elseif Bridge.IsESX() and Bridge.Core then
         Bridge.Core.RegisterServerCallback(name, cb)
     elseif Bridge.Core and Bridge.Core.Functions then
@@ -405,6 +416,67 @@ function Bridge.DB.SetVehicleImpounded(plate, body, engine, fuel)
     )
 end
 
+-- ---------- the garage script owns "where is the car" (DPS 2026-11-19) ----------
+-- jg-advancedgarages keeps in_garage and impound on the vehicle row. This resource only keeps a street spot for a
+-- car the garage says is out, and gives the spot up the moment the garage says otherwise.
+local garageCols
+
+---Does the vehicle table have the garage script's columns?
+---@return boolean
+function Bridge.DB.HasGarageColumns()
+    if garageCols == nil then
+        local ok, rows = pcall(function()
+            return MySQL.query.await(("SHOW COLUMNS FROM %s WHERE Field IN ('in_garage', 'impound')"):format(Bridge.DB.GetVehicleTable()))
+        end)
+        garageCols = ok and rows and #rows == 2 or false
+    end
+    return garageCols
+end
+
+---SQL that is true when the garage script says the car is out in the world
+---@return string
+function Bridge.DB.OutClause()
+    return Bridge.DB.HasGarageColumns() and '(in_garage = 0 AND impound = 0)' or '1 = 1'
+end
+
+---Plates that hold a street spot although the garage has the car (stored or impounded)
+---@return string[]
+function Bridge.DB.ParkedButInGarage()
+    if not Bridge.DB.HasGarageColumns() then return {} end
+    local rows = MySQL.query.await(('SELECT plate FROM %s WHERE %s = ? AND (in_garage <> 0 OR impound <> 0)')
+        :format(Bridge.DB.GetVehicleTable(), Bridge.DB.GetStateColumn()), { Bridge.DB.States.PARKED }) or {}
+    local list = {}
+    for _, r in ipairs(rows) do list[#list + 1] = r.plate end
+    return list
+end
+
+---Give up a street spot without touching the garage columns
+---@param plate string
+function Bridge.DB.ClearParkingSpot(plate)
+    MySQL.update.await(('UPDATE %s SET %s = ?, parking_data = NULL, vehicle_state = NULL, parking_lot = NULL, parked_at = NULL WHERE plate = ?')
+        :format(Bridge.DB.GetVehicleTable(), Bridge.DB.GetStateColumn()), { Bridge.DB.States.GARAGE, plate })
+end
+
+---A towed car goes back to its garage: the owner takes it out there
+---@param plate string
+function Bridge.DB.TowToGarage(plate, body, engine, fuel)
+    local set = Bridge.DB.HasGarageColumns() and ', in_garage = 1' or ''
+    MySQL.update.await(('UPDATE %s SET %s = ?, parking_data = NULL, vehicle_state = NULL, parking_lot = NULL, parked_at = NULL, '
+        .. 'body = COALESCE(?, body), engine = COALESCE(?, engine), fuel = COALESCE(?, fuel)%s WHERE plate = ?')
+        :format(Bridge.DB.GetVehicleTable(), Bridge.DB.GetStateColumn(), set),
+        { Bridge.DB.States.GARAGE, body, engine, fuel and math.floor(fuel) or nil, plate })
+end
+
+---The owner's vehicle row, only when the garage says the car is out
+---@param citizenid string
+---@param plate string
+---@return table|nil
+function Bridge.DB.GetOutVehicle(citizenid, plate)
+    local rows = MySQL.query.await(('SELECT * FROM %s WHERE %s = ? AND plate = ? AND %s')
+        :format(Bridge.DB.GetVehicleTable(), Bridge.DB.GetOwnerColumn(), Bridge.DB.OutClause()), { citizenid, plate })
+    return rows and rows[1] or nil
+end
+
 ---Check if player owns vehicle
 ---@param citizenid string
 ---@param plate string
@@ -447,16 +519,9 @@ end
 ---@param engine number
 ---@param fuel number
 function Bridge.PoliceImpound(plate, fullImpound, price, body, engine, fuel)
-    if Bridge.IsESX() then
-        -- ESX impound logic
-        TriggerEvent('esx_policejob:impound', plate)
-    else
-        -- QB impound
-        TriggerEvent('police:server:Impound', plate, fullImpound, price, body, engine, fuel)
-    end
-
-    -- Update DB
-    Bridge.DB.SetVehicleImpounded(plate, body, engine, fuel)
+    -- DPS 2026-11-19: the garage script is the one owner of where a car is. A car this resource tows goes back
+    -- to its garage (Bridge.DB.TowToGarage); real impounds are done by police through the garage script.
+    Bridge.DB.TowToGarage(plate, body, engine, fuel)
 end
 
 -- ============================================

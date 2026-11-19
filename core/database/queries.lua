@@ -27,13 +27,14 @@ function DB.GetAllParkedVehicles()
             parking_data,
             vehicle_state,
             parking_lot,
-            parked_at
+            UNIX_TIMESTAMP(parked_at) AS parked_at
         FROM %s
-        WHERE %s = ?
+        WHERE %s = ? AND %s
     ]]):format(
         Bridge.DB.GetOwnerColumn(),
         tbl,
-        state
+        state,
+        Bridge.DB.OutClause()
     ), {Bridge.DB.States.PARKED})
 
     if not result then return {} end
@@ -84,10 +85,10 @@ function DB.GetPlayerParkedVehicles(citizenid)
             parking_data,
             vehicle_state,
             parking_lot,
-            parked_at
+            UNIX_TIMESTAMP(parked_at) AS parked_at
         FROM %s
-        WHERE %s = ? AND %s = ?
-    ]]):format(tbl, owner, state), {citizenid, Bridge.DB.States.PARKED})
+        WHERE %s = ? AND %s = ? AND %s
+    ]]):format(tbl, owner, state, Bridge.DB.OutClause()), {citizenid, Bridge.DB.States.PARKED})
 
     if not result then return {} end
 

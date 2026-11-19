@@ -37,7 +37,7 @@ end)
 
 Bridge.CreateCallback('dps-parking:phone:requestDelivery', function(source, cb, plate, coords, rush)
     -- M4: Delivery.Request expects an options table, not a bare boolean.
-    local success, message = Delivery.Request(source, plate, coords, { rush = rush })
+    local success, message = Delivery.Request(source, plate, coords, { rush = rush })   -- answers "switched off" when delivery is off
     cb({ success = success, message = message })
 end)
 

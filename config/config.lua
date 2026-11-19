@@ -38,7 +38,9 @@ Config.Parking = {
     parkTrailersWithLoad = false,             -- Allow trailers with cargo
 
     -- Timer/Auto-impound
-    useTimerPark = true,                      -- Enable parking time limits
+    useTimerPark = true,                      -- A car left longer than maxParkTime is towed back to its garage
+    parkReach = 8.0,                          -- The player must be this close to the car to park it (server check)
+    reconcileSeconds = 30,                    -- How often parked cars are checked against the garage script
     maxParkTime = 259200,                     -- Max park time in seconds (3 days)
     impoundCheckInterval = 10000,             -- Check interval in ms
 
@@ -84,7 +86,8 @@ Config.Meters = {
     maximumMinutes = 480,                     -- Maximum time (8 hours)
     graceMinutes = 5,                         -- Grace period after expiry
     ticketAmount = 150,                       -- Fine for expired meter
-    towAfterMinutes = 30,                     -- Tow X minutes after expiry
+    towAfterMinutes = 30,                     -- Tow X minutes after expiry (back to the owner's garage)
+    towExpired = true,                        -- false = ticket only, never tow
 
     -- Premium zones (higher rates)
     premiumZones = {
@@ -100,11 +103,19 @@ Config.Meters = {
 }
 
 -- ============================================
+-- SWITCHED OFF UNTIL REBUILT (DPS 2026-11-19)
+-- ============================================
+-- Valet, delivery and lot ownership each let a player duplicate cars or print money (review of 2026-11-19).
+-- They are off (enabled = false in their own blocks below). Impound belongs to the garage script, so the
+-- impound module here is off as well: it took the fee and gave no car.
+Config.Impound = { enabled = false }
+
+-- ============================================
 -- VEHICLE DELIVERY
 -- ============================================
 
 Config.Delivery = {
-    enabled = true,                           -- Enable delivery service
+    enabled = false,                           -- Enable delivery service
     baseCost = 500,                           -- Base delivery fee
     perMileCost = 50,                         -- Additional per mile
     rushMultiplier = 2.0,                     -- Rush delivery cost multiplier
@@ -129,7 +140,7 @@ Config.Delivery = {
 -- ============================================
 
 Config.Business = {
-    enabled = true,                           -- Enable business ownership
+    enabled = false,                           -- Enable business ownership
     maxLotsPerPlayer = 3,                     -- Max lots one player can own
     ownerRevenuePercent = 70,                 -- Owner gets 70% of fees
     taxPercent = 10,                          -- City tax
@@ -300,7 +311,7 @@ Config.PrivateParking = {
 -- the valet fills, and an optional retrievalPoint (defaults to coords).
 
 Config.Valet = {
-    enabled = true,
+    enabled = false,
 
     locations = {
         {
