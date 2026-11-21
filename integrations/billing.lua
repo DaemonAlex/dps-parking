@@ -287,6 +287,9 @@ CreateThread(function()
     local script = Billing.Detect()
     if script then
         print('^2[DPS-Parking] Billing integration: hooked into ' .. script .. '^0')
+    elseif GetResourceState('wasabi_billing') == 'started' then
+        -- On purpose (see Billing.Detect): tickets are paid from the parking ticket list, no invoice is sent.
+        print('^2[DPS-Parking] Billing: wasabi_billing is running. Tickets are paid from the parking ticket list, no invoice is sent.^0')
     else
         print('^3[DPS-Parking] Billing integration: no billing system detected (direct payment mode)^0')
     end
